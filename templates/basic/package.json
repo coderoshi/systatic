@@ -1,0 +1,13 @@
+{
+  "author": "Joe Mama <jj@m.om>",
+  "name": "basic",
+  "description": "My Static App",
+  "version": "0.0.1",
+  "main": "./lib/systatic.js",
+  "engines": {
+    "node": ">0.5.3"
+  },
+  "dependencies": {
+    "systatic": "~>0.1.0"
+  }
+}

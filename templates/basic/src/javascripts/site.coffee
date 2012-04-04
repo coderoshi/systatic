@@ -1,0 +1,2 @@
+$ ->
+  $('.content p').fadeIn('slow')
