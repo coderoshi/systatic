@@ -1,0 +1,18 @@
+{
+  "sourceDir" : "src",
+  "javascripts": {
+    "route" : "/javascripts/(.+)",
+    "plugin" : "servitude",
+    "baseDir" : "javascripts"
+  },
+  "stylesheets": {
+    "route" : "/stylesheets/(.+)",
+    "plugin" : "servitude",
+    "baseDir" : "stylesheets"
+  },
+  "images": {
+    "route" : "/images/(.+)",
+    "plugin" : "filehandler",
+    "baseDir" : "."
+  }
+}

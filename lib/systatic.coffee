@@ -5,8 +5,13 @@ servitude = require('servitude')
 bricks    = require('bricks')
 exec      = require('child_process').exec
 
+exports.config = config = ()->
+  return @configData if @configData?
+  @configData = require(path.resolve(path.join('.', 'config.json')))
+
+
 exports.inProject = (dirname)->
-  return true if path.existsSync(dirname)
+  return true if path.existsSync(path.join(dirname, 'config.json'))
   false
 
 
@@ -16,14 +21,28 @@ exports.clone = (dirname, template)->
   exec "cp -R #{templatePath} #{dirname}", (error, stdout, stderr)->
     console.log error
 
+getPlugin = (value, appserver)->
+  switch value
+    when "servitude" then servitude
+    when "filehandler" then appserver.plugins.filehandler
+    else appserver.plugins.filehandler
 
-exports.startServer = (basedir, port, ipaddr, log)->
+assetRoute = (appserver, asset)->
+  c = config()
+  basedir = c.sourceDir || 'src'
+  appserver.addRoute(c[asset].route, getPlugin(c[asset].plugin, appserver), basedir: path.join(basedir, c[asset].baseDir))
+
+exports.startServer = (port, ipaddr, log)->
   appserver = new bricks.appserver()
 
+  c = config()
+
+  basedir = c.sourceDir || 'src'
+
   appserver.addRoute("/$", jade, basedir: basedir, name: 'index')
-  appserver.addRoute("/stylesheets/(.+)", servitude, basedir: path.join(basedir, 'stylesheets'))
-  appserver.addRoute("/javascripts/(.+)", servitude, basedir: path.join(basedir, 'javascripts'))
-  appserver.addRoute("/images/(.+)", appserver.plugins.filehandler, basedir: basedir)
+  assetRoute(appserver, 'stylesheets')
+  assetRoute(appserver, 'javascripts')
+  assetRoute(appserver, 'images')
   appserver.addRoute(".+", jade, basedir: basedir)
   appserver.addRoute(".+", appserver.plugins.fourohfour)
 
@@ -41,9 +60,11 @@ exports.startServer = (basedir, port, ipaddr, log)->
     console.log "Error starting server, unable to bind to #{ipaddr}:#{port}"
 
 
-#sys       = require('sys')
+
 
 ###
+sys       = require('sys')
+
 copyFile = (source, dest, callback)->
   read = fs.createReadStream(source)
   write = fs.createWriteStream(dest)
