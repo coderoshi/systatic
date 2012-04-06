@@ -40,7 +40,7 @@ exports.startServer = (port, ipaddr, log)->
   assetRoute(appserver, 'stylesheets')
   assetRoute(appserver, 'javascripts')
   assetRoute(appserver, 'images')
-  # crap. cannot extract directories from regexp.
+  # TODO: crap. cannot extract directories from regexp.
   appserver.addRoute(".+", jade, basedir: basedir, stylesheetspath: '/stylesheets/', javascriptspath: '/javascripts/')
   appserver.addRoute(".+", appserver.plugins.fourohfour)
 
@@ -59,4 +59,9 @@ exports.startServer = (port, ipaddr, log)->
 
 # Compiles and compacts all assets into a minimal set of files
 exports.build = ()->
-  
+  log "== Not yet implemented"
+
+
+# Copies all built files to a remote source, like S3
+exports.deploy = ()->
+  log "== Not yet implemented"

@@ -18,12 +18,25 @@ exports.init = (options)->
   javascriptspath = options.javascriptspath
   compiled = options.compiled
 
+stylesheets = (files)->
+  if typeof(files) == 'string'
+    "<script src='#{stylesheetspath}#{files}'></script>\n"
+  else if typeof(files) == 'object'
+    "<script src='#{stylesheetspath}#{files.join(',')}'></script>\n"
+
+javacripts = (files)->
+  if typeof(files) == 'string'
+    "<script src='#{javascriptspath}#{files}'></script>\n"
+  else if typeof(files) == 'object'
+    "<script src='#{javascriptspath}#{files.join(',')}'></script>\n"
+
  # accepts 'data' object
 exports.plugin = (req, res, options)->
   data = options.data || {}
   # these only use servitude if compiled is false
-  data['stylesheets'] = (files)-> "<script src='#{stylesheetspath}#{files}'></script>"
-  data['javascripts'] = (files)-> "<script src='#{javascriptspath}#{files}'></script>"
+  data['stylesheets'] = stylesheets
+  data['javascripts'] = javacripts
+  
   name = options.name
   name = req.url.replace(basepath, '').replace(/\?.*/, '') unless name
   filePath = options.file || path.join basedir, "#{name}.jade"

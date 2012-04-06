@@ -16,7 +16,8 @@
     "baseDir" : "."
   },
 
-  "deployment": [{
+  "deploy": [{
+    "compress" : true,
     "location" : "S3",
     "access_key_id" : "",
     "secret_access_key" : ""
