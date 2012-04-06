@@ -30,7 +30,7 @@ assetRoute = (appserver, asset)->
   basedir = c.sourceDir || 'src'
   appserver.addRoute(c[asset].route, getPlugin(c[asset].plugin, appserver), basedir: path.join(basedir, c[asset].baseDir))
 
-exports.startServer = (port, ipaddr, log)->
+exports.startServer = (port, ipaddr, logfile)->
   c = config()
 
   basedir = c.sourceDir || 'src'
@@ -44,9 +44,9 @@ exports.startServer = (port, ipaddr, log)->
   appserver.addRoute(".+", jade, basedir: basedir, stylesheetspath: '/stylesheets/', javascriptspath: '/javascripts/')
   appserver.addRoute(".+", appserver.plugins.fourohfour)
 
-  if log
+  if logfile
     try
-      appserver.addRoute(".+", appserver.plugins.loghandler, section: 'final', filename: log)
+      appserver.addRoute(".+", appserver.plugins.loghandler, section: 'final', filename: logfile)
     catch error
       console.log "Error opening logfile, continuing without logfile"
 

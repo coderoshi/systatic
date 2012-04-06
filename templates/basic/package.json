@@ -5,9 +5,9 @@
   "version": "0.0.1",
   "main": "./lib/systatic.js",
   "engines": {
-    "node": ">0.5.3"
+    "node": "~>0.6.0"
   },
   "dependencies": {
-    "systatic": "~>0.1.0"
+    "systatic": "~>0.1.2"
   }
 }
