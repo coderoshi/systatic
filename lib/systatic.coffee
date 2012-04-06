@@ -1,3 +1,4 @@
+log       = console.log
 fs        = require('fs')
 path      = require('path')
 jade      = require(path.join(__dirname, 'plugins', 'jade_template'))
@@ -15,9 +16,9 @@ exports.inProject = (dirname)->
 
 exports.clone = (dirname, template)->
   templatePath = path.join(__dirname, '..', 'templates', template)
-  console.log "Generating project #{dirname}"
+  log "Generating project #{dirname}"
   exec "cp -R #{templatePath} #{dirname}", (error, stdout, stderr)->
-    console.log error
+    log error
 
 getPlugin = (value, appserver)->
   switch value
@@ -48,14 +49,14 @@ exports.startServer = (port, ipaddr, logfile)->
     try
       appserver.addRoute(".+", appserver.plugins.loghandler, section: 'final', filename: logfile)
     catch error
-      console.log "Error opening logfile, continuing without logfile"
+      log "Error opening logfile, continuing without logfile"
 
   server = appserver.createServer()
 
   try
     server.listen(port, ipaddr)
   catch error
-    console.log "Error starting server, unable to bind to #{ipaddr}:#{port}"
+    log "Error starting server, unable to bind to #{ipaddr}:#{port}"
 
 # Compiles and compacts all assets into a minimal set of files
 exports.build = ()->
