@@ -14,5 +14,11 @@
     "route" : "/images/(.+)",
     "plugin" : "filehandler",
     "baseDir" : "."
-  }
+  },
+
+  "deployment": [{
+    "location" : "S3",
+    "access_key_id" : "",
+    "secret_access_key" : ""
+  }]
 }

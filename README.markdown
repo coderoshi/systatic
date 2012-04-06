@@ -15,7 +15,7 @@ The last command runs the server, by default port 3000 (like bricks, you can cha
 
 # Configuration
 
-The default generated project will come with a config.json file. This file defines various source and plugin combinations. Generally you should just follow the default settings, but if you wish to alter anything (for example, change the javascripts route from /javascripts to /js) change this file.
+The default generated project will come with a config.json file. This file defines various source and plugin combinations. Generally you should just follow the default settings, but if you wish to alter anything (for example, change the javascripts route from `/javascripts` to `/js`) change this file.
 
 # Coming Soon
 
