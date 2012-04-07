@@ -1,5 +1,6 @@
 {
   "sourceDir" : "src",
+  "buildDir" : "build",
   "javascripts": {
     "route" : "/javascripts/(.+)",
     "plugin" : "servitude",
@@ -15,7 +16,7 @@
     "plugin" : "filehandler",
     "baseDir" : "."
   },
-
+  "ignore": ["layout.jade"],
   "deploy": [{
     "compress" : true,
     "location" : "S3",

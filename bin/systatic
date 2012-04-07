@@ -7,7 +7,7 @@ var log = console.log,
 
 function logUsage() {
   log('Usage:');
-  log('  systatic [build | new APP_PATH]\n');
+  log('  systatic [build|new APP_PATH]\n');
   log('Options:');
   log('    --port port     [default 3000]');
   log('    --ipaddr ipaddr [default 0.0.0.0]');
@@ -23,14 +23,6 @@ if (argv._.length > 0) {
     }
     process.exit(0);
   }
-  if (argv._[0] === 'build') {
-    systatic.build();
-    process.exit(0);
-  }
-  if (argv._[0] === 'deploy') {
-    systatic.deploy();
-    process.exit(0);
-  }
 }
 
 if (argv.help || argv.h) {
@@ -41,6 +33,21 @@ if (argv.help || argv.h) {
 if (!systatic.inProject('.')) {
   logUsage();
   process.exit(0);
+}
+
+if (argv._.length > 0) {
+  if (argv._[0] === 'build') {
+    systatic.build();
+    process.exit(0);
+  }
+  if (argv._[0] === 'deploy') {
+    systatic.deploy();
+    process.exit(0);
+  }
+  if (argv._[0] === 'clean') {
+    systatic.clean();
+    process.exit(0);
+  }
 }
 
 var port = argv.port || 3000,

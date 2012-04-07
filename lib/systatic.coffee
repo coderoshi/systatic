@@ -33,7 +33,6 @@ assetRoute = (appserver, asset)->
 
 exports.startServer = (port, ipaddr, logfile)->
   c = config()
-
   basedir = c.sourceDir || 'src'
 
   appserver = new bricks.appserver()
@@ -58,11 +57,68 @@ exports.startServer = (port, ipaddr, logfile)->
   catch error
     log "Error starting server, unable to bind to #{ipaddr}:#{port}"
 
+
 # Compiles and compacts all assets into a minimal set of files
 exports.build = ()->
-  log "== Not yet implemented"
+  c = config()
+  basedir = c.sourceDir || 'src'
+  basedir = path.resolve(basedir)
+
+  builddir = c.buildDir || 'build'
+
+  try
+    fs.mkdirSync(builddir)
+    fs.mkdirSync("#{builddir}/derp")
+  catch e
+
+  builddir = path.resolve(builddir)
+
+  ignores = c.ignore || []
+
+
+  assets = {css: {}, js: {}}
+  walkSync basedir, /\.jade$/, (filenames)->
+    return if filenames.length == 0
+    filenames.forEach (fullname)->
+      filename = fullname.replace(basedir, '').replace(/\//, '')
+      for ignore in ignores
+        return if filename.match(ignore)
+      outputfile = path.join(builddir, filename.replace(/\.jade$/, '.html'))
+      jade.compile(filename.replace(/.jade$/, ''), fullname, outputfile, assets) #, true)
+
+  # now we have all the assets and how to group them together
+  console.log assets
 
 
 # Copies all built files to a remote source, like S3
 exports.deploy = ()->
   log "== Not yet implemented"
+
+exports.clean = ()->
+  c = config()
+  builddir = c.buildDir || 'build'
+  if builddir == '.' || builddir.match(/^\//) || builddir == '~' || builddir == ''
+    return log('No.')
+  exec "rm -rf #{builddir}", (error, stdout, stderr)->
+    log error
+
+
+# Walks directories and finds files matching the given filter
+walkSync = (start, filter, cb)->
+  filter = /./ unless filter?
+  if fs.statSync(start).isDirectory()
+    collection = fs.readdirSync(start).reduce((acc, name)->
+      if fs.statSync(path.join(start, name)).isDirectory()
+        acc.dirs.push(name)
+      else
+        if name.match(filter)
+          acc.names.push(path.join(start, name))
+      acc
+    names: []
+    dirs: []
+    )
+    cb(collection.names)
+    for dir in collection.dirs
+      walkSync(path.join(start, dir), filter, cb)
+  else
+    throw new Error("#{start} is not a directory")
