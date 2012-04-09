@@ -99,10 +99,33 @@ exports.build = ()->
 
   builddir = path.resolve(builddir)
 
+  assets = renderHTML(c, basedir, builddir)
+  renderCSS(c, basedir, builddir, assets.css)
+  renderJS(c, basedir, builddir, assets.js)
+
+  console.log "Done"
+
+
+# Copies all built files to a remote source, like S3
+exports.deploy = ()->
+  log "== Not yet implemented"
+
+exports.clean = ()->
+  c = config()
+  builddir = c.buildDir || 'build'
+  if builddir == '.' || builddir.match(/^\//) || builddir == '~' || builddir == ''
+    return log('No.')
+  exec "rm -rf #{builddir}", (error, stdout, stderr)->
+    log error
+
+
+## Helper functions
+
+renderHTML = (c, basedir, builddir)->
+  assets = {css: {}, js: {}}
+
   ignores = c.ignore || []
 
-
-  assets = {css: {}, js: {}}
   walkSync basedir, /\.jade$/, (filenames)->
     return if filenames.length == 0
     filenames.forEach (fullname)->
@@ -114,7 +137,46 @@ exports.build = ()->
       #randomname = filename.replace(/.jade$/, '')
       jade.compile(randomname, fullname, outputfile, assets) #, true)
 
+  assets
 
+
+renderJS = (c, basedir, builddir, jsassets)->
+  # Do all the same things for javascript
+  jsbasedir = c.javascripts.baseDir || 'javascripts'
+  jsbuilddir = path.resolve(path.join(builddir, jsbasedir))
+  jsbasedir = path.resolve(path.join(basedir, jsbasedir))
+
+  jsdata = {}
+
+  # first compile up all coffee files
+  walkSync jsbasedir, /\.coffee$/, (filenames)->
+    return if filenames.length == 0
+    filenames.forEach (fullname)->
+      filename = fullname.replace(jsbasedir, '').replace(/\//, '')
+      filedata = fs.readFileSync(fullname, 'utf8')
+      jsdata[filename] = coffee.compile(filedata)
+
+  # get all of the regular js files
+  walkSync jsbasedir, /\.js$/, (filenames)->
+    return if filenames.length == 0
+    filenames.forEach (fullname)->
+      filename = fullname.replace(jsbasedir, '').replace(/\//, '')
+      jsdata[filename] = fs.readFileSync(fullname, 'utf8')
+  
+  # output to merged JS files
+  u.forEach jsassets, (files, outputname)->
+    outputname = path.join(jsbuilddir, "#{outputname}.js")
+    buffer = ''
+    u.forEach files, (i, assetkey)->
+      unless jsdata[assetkey]?
+        console.log "Unknown asset #{assetkey}"
+        return
+      buffer += jsdata[assetkey]
+    # write buffer to outputname
+    fs.writeFileSync(outputname, buffer, 'utf8')
+
+
+renderCSS = (c, basedir, builddir, cssassets)->
   cssbasedir = c.stylesheets.baseDir || 'stylesheets'
   cssbuilddir = path.resolve(path.join(builddir, cssbasedir))
   cssbasedir = path.resolve(path.join(basedir, cssbasedir))
@@ -141,8 +203,8 @@ exports.build = ()->
       filename = fullname.replace(cssbasedir, '').replace(/\//, '')
       cssdata[filename] = fs.readFileSync(fullname, 'utf8')
   
-
-  u.forEach assets.css, (files, outputname)->
+  # output to merged CSS files
+  u.forEach cssassets, (files, outputname)->
     outputname = path.join(cssbuilddir, "#{outputname}.css")
     buffer = ''
     u.forEach files, (i, assetkey)->
@@ -152,55 +214,6 @@ exports.build = ()->
       buffer += cssdata[assetkey]
     # write buffer to outputname
     fs.writeFileSync(outputname, buffer, 'utf8')
-
-
-  # Do all the same things for javascript
-  jsbasedir = c.javascripts.baseDir || 'javascripts'
-  jsbuilddir = path.resolve(path.join(builddir, jsbasedir))
-  jsbasedir = path.resolve(path.join(basedir, jsbasedir))
-
-  jsdata = {}
-
-  # first compile up all coffee files
-  walkSync jsbasedir, /\.coffee$/, (filenames)->
-    return if filenames.length == 0
-    filenames.forEach (fullname)->
-      filename = fullname.replace(jsbasedir, '').replace(/\//, '')
-      filedata = fs.readFileSync(fullname, 'utf8')
-      jsdata[filename] = coffee.compile(filedata)
-
-  # get all of the regular js files
-  walkSync jsbasedir, /\.js$/, (filenames)->
-    return if filenames.length == 0
-    filenames.forEach (fullname)->
-      filename = fullname.replace(jsbasedir, '').replace(/\//, '')
-      jsdata[filename] = fs.readFileSync(fullname, 'utf8')
-  
-
-  u.forEach assets.js, (files, outputname)->
-    outputname = path.join(jsbuilddir, "#{outputname}.js")
-    buffer = ''
-    u.forEach files, (i, assetkey)->
-      unless jsdata[assetkey]?
-        console.log "Unknown asset #{assetkey}"
-        return
-      buffer += jsdata[assetkey]
-    # write buffer to outputname
-    fs.writeFileSync(outputname, buffer, 'utf8')
-  console.log "Done"
-
-
-# Copies all built files to a remote source, like S3
-exports.deploy = ()->
-  log "== Not yet implemented"
-
-exports.clean = ()->
-  c = config()
-  builddir = c.buildDir || 'build'
-  if builddir == '.' || builddir.match(/^\//) || builddir == '~' || builddir == ''
-    return log('No.')
-  exec "rm -rf #{builddir}", (error, stdout, stderr)->
-    log error
 
 
 # Walks directories and finds files matching the given filter
