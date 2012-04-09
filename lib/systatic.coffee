@@ -5,6 +5,11 @@ jade      = require(path.join(__dirname, 'plugins', 'jade_template'))
 servitude = require('servitude')
 bricks    = require('bricks')
 exec      = require('child_process').exec
+u         = require('underscore')
+
+# hopefully use servitude
+less      = require('less')
+coffee    = require('coffee-script')
 
 exports.config = config = ()->
   return @configData if @configData?
@@ -58,6 +63,25 @@ exports.startServer = (port, ipaddr, logfile)->
     log "Error starting server, unable to bind to #{ipaddr}:#{port}"
 
 
+exports.test = (port, ipaddr, logfile)->
+  c = config()
+  builddir = c.buildDir || 'build'
+  
+  appserver = new bricks.appserver()
+  
+
+  appserver.addRoute("/$", appserver.plugins.redirect, routes: [{ path: "/$", url: "/index.html" }])
+  appserver.addRoute(".+", appserver.plugins.filehandler, basedir: builddir)
+  appserver.addRoute(".+", appserver.plugins.fourohfour)
+
+  server = appserver.createServer()
+
+  try
+    server.listen(port, ipaddr)
+  catch error
+    log "Error starting server, unable to bind to #{ipaddr}:#{port}"
+
+
 # Compiles and compacts all assets into a minimal set of files
 exports.build = ()->
   c = config()
@@ -69,6 +93,8 @@ exports.build = ()->
   try
     fs.mkdirSync(builddir)
     fs.mkdirSync("#{builddir}/derp")
+    fs.mkdirSync("#{builddir}/stylesheets")
+    fs.mkdirSync("#{builddir}/javascripts")
   catch e
 
   builddir = path.resolve(builddir)
@@ -84,10 +110,84 @@ exports.build = ()->
       for ignore in ignores
         return if filename.match(ignore)
       outputfile = path.join(builddir, filename.replace(/\.jade$/, '.html'))
-      jade.compile(filename.replace(/.jade$/, ''), fullname, outputfile, assets) #, true)
+      randomname = (Math.random() * 0x100000000 + 1).toString(36)
+      #randomname = filename.replace(/.jade$/, '')
+      jade.compile(randomname, fullname, outputfile, assets) #, true)
 
-  # now we have all the assets and how to group them together
-  console.log assets
+
+  cssbasedir = c.stylesheets.baseDir || 'stylesheets'
+  cssbuilddir = path.resolve(path.join(builddir, cssbasedir))
+  cssbasedir = path.resolve(path.join(basedir, cssbasedir))
+
+  parser = new less.Parser
+    paths: [cssbasedir], # Specify search paths for @import directives
+    #filename: 'style.less' # Specify a filename, for better error messages
+
+  cssdata = {}
+
+  # first compile up all less files
+  walkSync cssbasedir, /\.less$/, (filenames)->
+    return if filenames.length == 0
+    filenames.forEach (fullname)->
+      filename = fullname.replace(cssbasedir, '').replace(/\//, '')
+      filedata = fs.readFileSync(fullname, 'utf8')
+      parser.parse filedata, (e, tree)->
+        cssdata[filename] = tree.toCSS(compress: true)
+
+  # get all of the regular css files
+  walkSync cssbasedir, /\.css$/, (filenames)->
+    return if filenames.length == 0
+    filenames.forEach (fullname)->
+      filename = fullname.replace(cssbasedir, '').replace(/\//, '')
+      cssdata[filename] = fs.readFileSync(fullname, 'utf8')
+  
+
+  u.forEach assets.css, (files, outputname)->
+    outputname = path.join(cssbuilddir, "#{outputname}.css")
+    buffer = ''
+    u.forEach files, (i, assetkey)->
+      unless cssdata[assetkey]?
+        console.log "Unknown asset #{assetkey}"
+        return
+      buffer += cssdata[assetkey]
+    # write buffer to outputname
+    fs.writeFileSync(outputname, buffer, 'utf8')
+
+
+  # Do all the same things for javascript
+  jsbasedir = c.javascripts.baseDir || 'javascripts'
+  jsbuilddir = path.resolve(path.join(builddir, jsbasedir))
+  jsbasedir = path.resolve(path.join(basedir, jsbasedir))
+
+  jsdata = {}
+
+  # first compile up all coffee files
+  walkSync jsbasedir, /\.coffee$/, (filenames)->
+    return if filenames.length == 0
+    filenames.forEach (fullname)->
+      filename = fullname.replace(jsbasedir, '').replace(/\//, '')
+      filedata = fs.readFileSync(fullname, 'utf8')
+      jsdata[filename] = coffee.compile(filedata)
+
+  # get all of the regular js files
+  walkSync jsbasedir, /\.js$/, (filenames)->
+    return if filenames.length == 0
+    filenames.forEach (fullname)->
+      filename = fullname.replace(jsbasedir, '').replace(/\//, '')
+      jsdata[filename] = fs.readFileSync(fullname, 'utf8')
+  
+
+  u.forEach assets.js, (files, outputname)->
+    outputname = path.join(jsbuilddir, "#{outputname}.js")
+    buffer = ''
+    u.forEach files, (i, assetkey)->
+      unless jsdata[assetkey]?
+        console.log "Unknown asset #{assetkey}"
+        return
+      buffer += jsdata[assetkey]
+    # write buffer to outputname
+    fs.writeFileSync(outputname, buffer, 'utf8')
+  console.log "Done"
 
 
 # Copies all built files to a remote source, like S3

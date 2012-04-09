@@ -35,6 +35,10 @@ if (!systatic.inProject('.')) {
   process.exit(0);
 }
 
+var port = argv.port || 3000,
+    ipaddr = argv.ipaddr || '0.0.0.0',
+    logfile = argv.log;
+
 if (argv._.length > 0) {
   if (argv._[0] === 'build') {
     systatic.build();
@@ -48,10 +52,9 @@ if (argv._.length > 0) {
     systatic.clean();
     process.exit(0);
   }
+  if (argv._[0] === 'test') {
+    systatic.test(port, ipaddr, logfile);
+  }
+} else {
+  systatic.startServer(port, ipaddr, logfile);
 }
-
-var port = argv.port || 3000,
-    ipaddr = argv.ipaddr || '0.0.0.0',
-    logfile = argv.log;
-
-systatic.startServer(port, ipaddr, logfile);
