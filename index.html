@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Systatic : Static Site Development and Generation" />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Systatic</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/coderoshi/systatic">Fork Me on GitHub</a>
+
+          <h1 id="project_title">Systatic</h1>
+          <h2 id="project_tagline">Static Site Development and Generation</h2>
+
+          <section id="downloads">
+            <a class="zip_download_link" href="https://github.com/coderoshi/systatic/zipball/master">Download this project as a .zip file</a>
+            <a class="tar_download_link" href="https://github.com/coderoshi/systatic/tarball/master">Download this project as a tar.gz file</a>
+          </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <p>Inspired by <a href="http://middlemanapp.com">Middleman</a>, this Node.js toolchain is written with <a href="http://bricksjs.com">Bricks</a> and <a href="https://github.com/JerrySievert/servitude">Servitude</a>, to allow the quick authoring if static web apps.</p>
+
+<p>The focus here is to quickly develop and deploy apps that are heavier on CSS or Javascript, leveraging tools that allow the least amount of typing to get the job done (eg. Less, Stylus, CoffeeScript, Jade). Finally, to optimize file management so your apps load as quickly as possible (presumably via some CDN).</p>
+
+<h1>Getting Started</h1>
+
+<p>First you need to install the systatic server. It's really just a bricksjs+servitude server with a bunch of predefined paths and templates.</p>
+
+<pre><code>npm install systatic -g
+systatic new my_proj
+cd my_proj
+systatic
+</code></pre>
+
+<p>The last command runs the server, by default port 3000 (like bricks, you can change the port with <code>--port</code>).</p>
+
+<h1>Configuration</h1>
+
+<p>The default generated project will come with a config.json file. This file defines various source and plugin combinations. Generally you should just follow the default settings, but if you wish to alter anything (for example, change the javascripts route from <code>/javascripts</code> to <code>/js</code>) change this file.</p>
+
+<h2>Build</h2>
+
+<p>Since the point is to generate a static site, the next command you run will be <code>build</code>. This will remove the need for an app server like nodejs, and allow you to just dump the static files somewhere like CloudFront.</p>
+
+<pre><code>systatic build
+</code></pre>
+
+<h2>Test</h2>
+
+<p>Once your static files are built and compressed, you can test out the files output in the <code>build</code> directory with the <code>test</code> command. This just runs a static server on the same development port in your <code>config.json</code> file.</p>
+
+<pre><code>systatic test
+</code></pre>
+
+<h2>Deploy</h2>
+
+<p><em>Coming soon...</em></p>
+
+<p>With that generated static content, next you'll want to deploy.</p>
+
+<pre><code>systatic deploy
+</code></pre>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Systatic maintained by <a href="https://github.com/coderoshi">coderoshi</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
