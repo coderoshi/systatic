@@ -37,12 +37,38 @@ Once your static files are built and compressed, you can test out the files outp
 systatic test
 ```
 
+# Coming Soon
+
 ## Deploy
 
-_Coming soon..._
-
-With that generated static content, next you'll want to deploy.
+With that generated static content, next you'll want to deploy to some server, git repo, CDN... whatever.
 
 ```
 systatic deploy
 ```
+
+## Hooks
+
+I'm reimplementing the hard-coded actions as sets of discreet stages which can be configured, allowing third-party plugins to add their own stage to the build/render toolchain. Current thoughts:
+
+First:
+
+* Every action can be attached to run before/after any other action.
+
+An example may be if someone wanted to added a function to compress a set of icons used as CSS into sprites, and pass that information into the next action (which would be bound to the compress stage)
+
+Stages (executing a stage executes every stage up to it):
+
+* clean
+* resource
+* assets
+* compress
+* deploy
+
+eg.
+
+```
+systatic assets
+```
+
+Would clean the output directory, build the html resource, and build the assets.

@@ -145,7 +145,6 @@ renderHTML = (c, basedir, builddir)->
         return if filename.match(ignore)
       outputfile = path.join(builddir, filename.replace(/\.jade$/, '.html'))
       randomname = (Math.random() * 0x100000000 + 1).toString(36)
-      #randomname = filename.replace(/.jade$/, '')
       jade.compile(randomname, fullname, outputfile, assets, true)
 
   assets
