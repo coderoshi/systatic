@@ -10,6 +10,8 @@ u         = require('underscore')
 # hopefully use servitude
 less      = require('less')
 coffee    = require('coffee-script')
+uglifyjs  = require('uglify-js')
+cleancss  = require('clean-css')
 
 exports.config = config = ()->
   return @configData if @configData?
@@ -74,8 +76,6 @@ exports.test = (port, ipaddr, logfile)->
   builddir = c.buildDir || 'build'
   
   appserver = new bricks.appserver()
-  
-
   appserver.addRoute("/$", appserver.plugins.redirect, routes: [{ path: "/$", url: "/index.html" }])
   appserver.addRoute(".+", appserver.plugins.filehandler, basedir: builddir)
 
@@ -146,7 +146,7 @@ renderHTML = (c, basedir, builddir)->
       outputfile = path.join(builddir, filename.replace(/\.jade$/, '.html'))
       randomname = (Math.random() * 0x100000000 + 1).toString(36)
       #randomname = filename.replace(/.jade$/, '')
-      jade.compile(randomname, fullname, outputfile, assets) #, true)
+      jade.compile(randomname, fullname, outputfile, assets, true)
 
   assets
 
@@ -174,6 +174,9 @@ renderJS = (c, basedir, builddir, jsassets)->
       filename = fullname.replace(jsbasedir, '').replace(/\//, '')
       jsdata[filename] = fs.readFileSync(fullname, 'utf8')
   
+  jsp = uglifyjs.parser
+  pro = uglifyjs.uglify
+
   # output to merged JS files
   u.forEach jsassets, (files, outputname)->
     outputname = path.join(jsbuilddir, "#{outputname}.js")
@@ -184,7 +187,11 @@ renderJS = (c, basedir, builddir, jsassets)->
         return
       buffer += jsdata[assetkey]
     # write buffer to outputname
-    fs.writeFileSync(outputname, buffer, 'utf8')
+    ast = jsp.parse(buffer)    # parse code and get the initial AST
+    ast = pro.ast_mangle(ast)  # get a new AST with mangled names
+    ast = pro.ast_squeeze(ast) # get an AST with compression optimizations
+    finalCode = pro.gen_code(ast)
+    fs.writeFileSync(outputname, finalCode, 'utf8')
 
 
 renderCSS = (c, basedir, builddir, cssassets)->
@@ -224,7 +231,8 @@ renderCSS = (c, basedir, builddir, cssassets)->
         return
       buffer += cssdata[assetkey]
     # write buffer to outputname
-    fs.writeFileSync(outputname, buffer, 'utf8')
+    finalCode = cleancss.process(buffer)
+    fs.writeFileSync(outputname, finalCode, 'utf8')
 
 
 # Walks directories and finds files matching the given filter
