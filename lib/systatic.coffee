@@ -78,7 +78,12 @@ exports.test = (port, ipaddr, logfile)->
 
   appserver.addRoute("/$", appserver.plugins.redirect, routes: [{ path: "/$", url: "/index.html" }])
   appserver.addRoute(".+", appserver.plugins.filehandler, basedir: builddir)
-  appserver.addRoute(".+", appserver.plugins.fourohfour)
+
+  fourohfour = (request, response, options) ->
+    request.url = "/404.html"
+    appserver.plugins.filehandler.plugin request, response, options
+
+  appserver.addRoute(".+", fourohfour, basedir: builddir)
 
   server = appserver.createServer()
 
