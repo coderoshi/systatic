@@ -50,6 +50,7 @@ exports.startServer = (port, ipaddr, logfile)->
 
   fourohfour = (request, response, options) ->
     request.url = "/404"
+    response.statusCode 404
     jade.plugin request, response, options
 
   appserver.addRoute(".+", fourohfour)
