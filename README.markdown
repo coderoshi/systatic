@@ -63,7 +63,7 @@ Stages (executing a stage executes every stage up to it):
 * resource
 * assets
 * compress
-* deploy
+* publish
 
 eg.
 
