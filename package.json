@@ -2,7 +2,7 @@
   "author": "Eric Redmond <eric.redmond@gmail.com>",
   "name": "systatic",
   "description": "Static Application Server",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "homepage": "http://systaticjs.com/",
   "preferGlobal": "true",
   "repository": {
