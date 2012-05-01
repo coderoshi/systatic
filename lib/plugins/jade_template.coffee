@@ -10,17 +10,82 @@ stylesheetspath = '/stylesheets/'
 javascriptspath = '/javascripts/'
 compiled = false
 
-stylesheets = (files, attrs)->
-  if typeof(files) == 'string'
-    "<script src='#{stylesheetspath}#{files}'></script>\n"
-  else if typeof(files) == 'object'
-    "<script src='#{stylesheetspath}#{files.join(',')}'></script>\n"
 
-javascripts = (files)->
-  if typeof(files) == 'string'
-    "<script src='#{javascriptspath}#{files}'></script>\n"
-  else if typeof(files) == 'object'
-    "<script src='#{javascriptspath}#{files.join(',')}'></script>\n"
+# TODO: move this out to utils
+walkSync = (start, filter, cb)->
+  filter = /./ unless filter?
+  if fs.statSync(start).isDirectory()
+    collection = fs.readdirSync(start).reduce((acc, name)->
+      if fs.statSync(path.join(start, name)).isDirectory()
+        acc.dirs.push(name)
+      else
+        name = path.join(start, name)
+        if name.match(filter)
+          acc.names.push(name)
+      acc
+    names: []
+    dirs: []
+    )
+    cb(collection.names)
+    for dir in collection.dirs
+      walkSync(path.join(start, dir), filter, cb)
+  else
+    throw new Error("#{start} is not a directory")
+
+inflateFiles = (sourceDir, pattern)->
+  files = []
+  walkSync sourceDir, pattern, (filenames)->
+    filenames.forEach (fullname)->
+      files.push fullname.replace("#{sourceDir}/", '')
+  files
+
+
+# force css sourceDir to be the same as the public path
+stylesheets = ()->
+  files = u.flatten(arguments)
+
+  # TODO: BAD BAD BAD! Extract /src/ from sourceDir and javascript/baseDir
+  sourceDir = 'src/stylesheets'
+
+  if typeof(files) == 'undefined'
+    files =[]
+    walkSync sourceDir, null, (filenames)->
+      filenames.forEach (fullname)->
+        files.push fullname.replace("#{sourceDir}/", '')
+  
+  files[pos] = inflateFiles(sourceDir, file) for file, pos in files
+
+  files = u.uniq(u.flatten(files))
+
+  "<script src='#{stylesheetspath}#{files.join(',')}'></script>\n"
+
+
+# TODO: Make "scriptserver" just execute any "javascript" registered renders
+javascripts = ()->
+  files = u.flatten(arguments)
+
+  # TODO: BAD BAD BAD! Extract /src/ from sourceDir and javascript/baseDir
+  sourceDir = 'src/javascripts'
+  
+  if typeof(files) == 'undefined'
+    files =[]
+    walkSync sourceDir, null, (filenames)->
+      filenames.forEach (fullname)->
+        files.push fullname.replace("#{sourceDir}/", '')
+  
+  files[pos] = inflateFiles(sourceDir, file) for file, pos in files
+
+  files = u.uniq(u.flatten(files))
+
+  scripts = ""
+  scripts += "<script src='http://coffeescript.org/extras/coffee-script.js'></script>\n"
+  for file in files
+    if file.match(/.coffee$/)
+      scripts += "<script src='#{javascriptspath}#{file}' type='text/coffeescript'></script>\n"
+    else
+      scripts += "<script src='#{javascriptspath}#{file}'></script>\n"
+  scripts
+
 
 exports.init = (options)->
   options  = options || {}
