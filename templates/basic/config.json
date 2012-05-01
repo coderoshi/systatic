@@ -9,7 +9,8 @@
   "stylesheets": {
     "route" : "/stylesheets/(.+)",
     "plugin" : "servitude",
-    "baseDir" : "stylesheets"
+    "baseDir" : "stylesheets",
+    "ignore": []
   },
   "images": {
     "route" : "/images/(.+)",
@@ -18,7 +19,7 @@
   },
   "ignore": ["layout.jade"],
   "deploy": [{
-    "compress" : true,
+    "compress" : "true",
     "location" : "S3",
     "access_key_id" : "",
     "secret_access_key" : ""
