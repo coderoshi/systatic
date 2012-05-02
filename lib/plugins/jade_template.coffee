@@ -87,6 +87,10 @@ javascripts = ()->
   scripts
 
 
+envvar = (data)->
+  env = 'dev'
+  data[env]
+
 exports.init = (options)->
   options  = options || {}
   basepath = options.basepath if options.basepath
@@ -100,6 +104,7 @@ exports.plugin = (req, res, options)->
   data = options.data || {}
   data['stylesheets'] = stylesheets
   data['javascripts'] = javascripts
+  data['env'] = envvar
   name = options.name
   name = req.url.replace(basepath, '').replace(/\?.*/, '') unless name
   filename = options.file || path.join basedir, "#{name}.jade"
@@ -148,6 +153,8 @@ exports.compile = (name, filename, outputfile, assets, uglify)->
   data =
     stylesheets: compiledstylesheets(name, assets.css)
     javascripts: compiledjavascripts(name, assets.js)
+    env: envvar
+
 
   filedata = fs.readFileSync(filename, 'utf8')
 
