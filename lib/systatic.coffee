@@ -12,6 +12,7 @@ less      = require('less')
 coffee    = require('coffee-script')
 uglifyjs  = require('uglify-js')
 cleancss  = require('clean-css')
+compress  = require('compress-buffer')
 
 exports.config = config = ()->
   return @configData if @configData?
@@ -103,23 +104,85 @@ exports.build = ()->
 
   try
     fs.mkdirSync(builddir)
-    fs.mkdirSync("#{builddir}/derp")
+    #fs.mkdirSync("#{builddir}/derp")
     fs.mkdirSync("#{builddir}/stylesheets")
     fs.mkdirSync("#{builddir}/javascripts")
   catch e
 
   builddir = path.resolve(builddir)
 
+
+  BuildEventManager = require('./build_event_manager').BuildEventManager
+  events = new BuildEventManager()
+
+  # load plugins
+  events.register( require('./plugins/echo') )
+  events.register( require('./plugins/jade') )
+
+
+  events.start('compress')
+
+  ###
+  log "Building HTML"
   assets = renderHTML(c, basedir, builddir)
+  log "Building CSS"
   renderCSS(c, basedir, builddir, assets.css)
+  log "Building JS"
   renderJS(c, basedir, builddir, assets.js)
 
-  console.log "Done"
+  compressBuildFiles(/\.(html|css|js)$/)
+  ###
+
+  log "Done"
+
+compressBuildFiles = (c, pattern)->
+  log "Compressing Assets"
+  #inline = dc.compress == "inline"
+  walkSync builddir, pattern, (fullname)->
+    zipFile(fullname, false) #inline)
 
 
 # Copies all built files to a remote source, like S3
 exports.deploy = ()->
-  log "== Not yet implemented"
+  c = config()
+  builddir = c.buildDir || 'build'
+  builddir = path.resolve(builddir)
+  dcs = c.deploy || []
+
+  u.forEach dcs, (dc)->
+    # TODO: compress in seperate phase, always append .gz
+    # If a deployment wants inline, change file names on transfer
+    ###
+    if dc.compress? && dc.compress.toString() != "false"
+      log "Compressing Assets"
+      inline = dc.compress == "inline"
+      walkSync builddir, /\.(html|css|js)$/, (fullname)->
+        zipFile(fullname, inline)
+    ###
+
+    s3 = require('noxmox').nox.createClient
+      key: dc.access_key_id
+      secret: dc.secret_access_key
+      bucket: dc.bucket
+
+    walkSync builddir, null, (fullname)->
+      filename = fullname.replace(builddir, '').replace(/\//, '')
+      data = fs.readFileSync(fullname)
+      headers = { 'Content-Length': data.length, 'x-amz-acl':'public' }
+      headers['Content-Encoding'] = 'gzip' if filename.match(/.gz$/)
+      req = s3.put(filename, headers)
+      log filename
+      req.on 'continue', ()->
+        log "pushing #{filename}"
+        req.end(data)
+      req.on 'response', (res)->
+        log "responding #{filename}"
+        res.on 'data', (chunk)-> log chunk
+        res.on 'end', ()-> log 'File is now stored on S3' if res.statusCode == 200
+
+
+  log "Deployed"
+
 
 exports.clean = ()->
   c = config()
@@ -132,23 +195,25 @@ exports.clean = ()->
 
 ## Helper functions
 
+###
 renderHTML = (c, basedir, builddir)->
   assets = {css: {}, js: {}}
 
   ignores = c.ignore || []
 
-  walkSync basedir, /\.jade$/, (filenames)->
-    return if filenames.length == 0
-    filenames.forEach (fullname)->
-      filename = fullname.replace(basedir, '').replace(/\//, '')
-      for ignore in ignores
-        return if filename.match(ignore)
-      outputfile = path.join(builddir, filename.replace(/\.jade$/, '.html'))
-      randomname = (Math.random() * 0x100000000 + 1).toString(36)
-      jade.compile(randomname, fullname, outputfile, assets, true)
+  walkSync basedir, /\.jade$/, (fullname)->
+    filename = fullname.replace(basedir, '').replace(/\//, '')
+    for ignore in ignores
+      return if filename.match(ignore)
+    outputfile = path.join(builddir, filename.replace(/\.jade$/, '.html'))
+    randomname = (Math.random() * 0x100000000 + 1).toString(36)
+    jade.compile(randomname, fullname, outputfile, assets, true)
 
   assets
+###
 
+
+## A TREE DIED FOR ME (book)
 
 renderJS = (c, basedir, builddir, jsassets)->
   # Do all the same things for javascript
@@ -159,19 +224,15 @@ renderJS = (c, basedir, builddir, jsassets)->
   jsdata = {}
 
   # first compile up all coffee files
-  walkSync jsbasedir, /\.coffee$/, (filenames)->
-    return if filenames.length == 0
-    filenames.forEach (fullname)->
-      filename = fullname.replace(jsbasedir, '').replace(/\//, '')
-      filedata = fs.readFileSync(fullname, 'utf8')
-      jsdata[filename] = coffee.compile(filedata)
+  walkSync jsbasedir, /\.coffee$/, (fullname)->
+    filename = fullname.replace(jsbasedir, '').replace(/\//, '')
+    filedata = fs.readFileSync(fullname, 'utf8')
+    jsdata[filename] = coffee.compile(filedata)
 
   # get all of the regular js files
-  walkSync jsbasedir, /\.js$/, (filenames)->
-    return if filenames.length == 0
-    filenames.forEach (fullname)->
-      filename = fullname.replace(jsbasedir, '').replace(/\//, '')
-      jsdata[filename] = fs.readFileSync(fullname, 'utf8')
+  walkSync jsbasedir, /\.js$/, (fullname)->
+    filename = fullname.replace(jsbasedir, '').replace(/\//, '')
+    jsdata[filename] = fs.readFileSync(fullname, 'utf8')
   
   jsp = uglifyjs.parser
   pro = uglifyjs.uglify
@@ -182,7 +243,7 @@ renderJS = (c, basedir, builddir, jsassets)->
     buffer = ''
     u.forEach files, (i, assetkey)->
       unless jsdata[assetkey]?
-        console.log "Unknown asset #{assetkey}"
+        log "Unknown asset #{assetkey}"
         return
       buffer += jsdata[assetkey]
     # write buffer to outputname
@@ -205,20 +266,16 @@ renderCSS = (c, basedir, builddir, cssassets)->
   cssdata = {}
 
   # first compile up all less files
-  walkSync cssbasedir, /\.less$/, (filenames)->
-    return if filenames.length == 0
-    filenames.forEach (fullname)->
-      filename = fullname.replace(cssbasedir, '').replace(/\//, '')
-      filedata = fs.readFileSync(fullname, 'utf8')
-      parser.parse filedata, (e, tree)->
-        cssdata[filename] = tree.toCSS(compress: true)
+  walkSync cssbasedir, /\.less$/, (fullname)->
+    filename = fullname.replace(cssbasedir, '').replace(/\//, '')
+    filedata = fs.readFileSync(fullname, 'utf8')
+    parser.parse filedata, (e, tree)->
+      cssdata[filename] = tree.toCSS(compress: true)
 
   # get all of the regular css files
-  walkSync cssbasedir, /\.css$/, (filenames)->
-    return if filenames.length == 0
-    filenames.forEach (fullname)->
-      filename = fullname.replace(cssbasedir, '').replace(/\//, '')
-      cssdata[filename] = fs.readFileSync(fullname, 'utf8')
+  walkSync cssbasedir, /\.css$/, (fullname)->
+    filename = fullname.replace(cssbasedir, '').replace(/\//, '')
+    cssdata[filename] = fs.readFileSync(fullname, 'utf8')
   
   # output to merged CSS files
   u.forEach cssassets, (files, outputname)->
@@ -226,7 +283,7 @@ renderCSS = (c, basedir, builddir, cssassets)->
     buffer = ''
     u.forEach files, (i, assetkey)->
       unless cssdata[assetkey]?
-        console.log "Unknown asset #{assetkey}"
+        log "Unknown asset #{assetkey}"
         return
       buffer += cssdata[assetkey]
     # write buffer to outputname
@@ -234,7 +291,19 @@ renderCSS = (c, basedir, builddir, cssassets)->
     fs.writeFileSync(outputname, finalCode, 'utf8')
 
 
+# compress asset files
+zipFile = (filename, inline)->
+  data = fs.readFileSync(filename, 'utf8')
+  compressedData = compress.compress(new Buffer(data))
+  outputname = if inline then filename else "#{filename}.gz"
+  fs.writeFileSync(outputname, compressedData, 'utf8')
+
+
+
 # Walks directories and finds files matching the given filter
+# TODO: make this more systatic-centric. pass in where you wish
+# to walk: source, build, javascripts, stylesheets, images.
+# Optionally show ignored files (false by default)
 walkSync = (start, filter, cb)->
   filter = /./ unless filter?
   if fs.statSync(start).isDirectory()
@@ -248,7 +317,8 @@ walkSync = (start, filter, cb)->
     names: []
     dirs: []
     )
-    cb(collection.names)
+    if collection.names.length > 0
+      collection.names.forEach (fullname)-> cb(fullname)
     for dir in collection.dirs
       walkSync(path.join(start, dir), filter, cb)
   else
