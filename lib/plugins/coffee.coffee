@@ -2,17 +2,17 @@ util   = require('../utils')
 {join} = require('path')
 coffee = require('coffee-script')
 
-modules.exports = {
+module.exports =
   name: 'coffeescript'
   defaultEvent: 'scripts'
   build: (config, phaseData)->
-  # jsassets = phaseData.assets.js
-  # ignores = config.ignore || []
+    # jsassets = phaseData.assets.js
+    # ignores = config.ignore || []
 
-  util.compileOut config.javascripts.sourceDir, /\.coffee$/, (filename, filedata, cb)->
-    outputfile = join(config.javascripts.buildDir, "#{filename}.js")
-    js = coffee.compile(filedata)
-    cb(outputfile, js)
+    util.compileOut config.javascripts.sourceDir, /\.coffee$/, (filename, filedata, cb)->
+      outputfile = join(config.javascripts.buildDir, "#{filename}.js")
+      js = coffee.compile(filedata)
+      cb(outputfile, js)
 
 
 ###
