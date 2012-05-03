@@ -2,23 +2,23 @@ util   = require('../utils')
 {join} = require('path')
 less   = require('less')
 
-exports.name = 'less'
-exports.defaultEvent = 'styles'
-exports.build = (config, phaseData)->
-  # cssassets = phaseData.assets.css
-  # ignores = config.ignore || []
+module.exports =
+  name: 'less'
+  defaultEvent: 'styles'
+  build: (config, phaseData)->
+    # cssassets = phaseData.assets.css
+    # ignores = config.ignore || []
 
-  parser = new less.Parser
-    paths: [config.stylesheets.sourceDir],   # Specify search paths for @import directives
-    #filename: 'style.less' # Specify a filename, for better error messages
+    parser = new less.Parser
+      paths: [config.stylesheets.sourceDir],   # Specify search paths for @import directives
+      #filename: 'style.less' # Specify a filename, for better error messages
 
-  util.compileOut config.stylesheets.sourceDir, /\.less$/, (filename, filedata, cb)->
-    outputfile = join(config.stylesheets.buildDir, "#{filename}.css")
-    parser.parse filedata, (e, tree)->
-      css = tree.toCSS(compress: true)
-      cb(outputfile, css)
+    util.compileOut config.stylesheets.sourceDir, /\.less$/, (filename, filedata, cb)->
+      outputfile = join(config.stylesheets.buildDir, "#{filename}.css")
+      parser.parse filedata, (e, tree)->
+        css = tree.toCSS(compress: true)
+        cb(outputfile, css)
 
-  #assets
 ###
 renderCSS = (c, basedir, builddir, cssassets)->
   cssbasedir = c.stylesheets.baseDir || 'stylesheets'

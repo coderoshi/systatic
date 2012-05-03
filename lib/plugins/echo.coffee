@@ -1,6 +1,7 @@
 
 # simply echos out the steps
-exports.defaultEvent = 'all:pre'
-
-exports.build = (config, phaseData)->
-  console.log "Event: #{phaseData.event.replace(/:.*$/, '')}"
+module.exports =
+  name: 'echo'
+  defaultEvent: 'all:pre'
+  build: (config, phaseData)->
+    console.log "Event: #{phaseData.event.replace(/:.*$/, '')}"
