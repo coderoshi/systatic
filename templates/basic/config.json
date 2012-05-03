@@ -3,19 +3,19 @@
   "buildDir" : "build",
   "javascripts": {
     "route" : "/javascripts/(.+)",
-    "plugin" : "servitude",
-    "baseDir" : "javascripts"
+    "plugin" : "filehandler",
+    "sourceDir" : "javascripts"
   },
   "stylesheets": {
     "route" : "/stylesheets/(.+)",
-    "plugin" : "servitude",
-    "baseDir" : "stylesheets",
+    "plugin" : "filehandler",
+    "sourceDir" : "stylesheets",
     "ignore": []
   },
   "images": {
     "route" : "/images/(.+)",
     "plugin" : "filehandler",
-    "baseDir" : "."
+    "sourceDir" : "."
   },
   "ignore": ["layout.jade"],
   "deploy": [{

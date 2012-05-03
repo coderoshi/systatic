@@ -1,3 +1,4 @@
+_         = require('underscore')
 log       = console.log
 fs        = require('fs')
 path      = require('path')
@@ -5,10 +6,7 @@ jade      = require(path.join(__dirname, 'plugins', 'jade_template'))
 servitude = require('servitude')
 bricks    = require('bricks')
 exec      = require('child_process').exec
-u         = require('underscore')
 
-# hopefully use servitude
-less      = require('less')
 coffee    = require('coffee-script')
 uglifyjs  = require('uglify-js')
 cleancss  = require('clean-css')
@@ -112,24 +110,20 @@ exports.build = ()->
   builddir = path.resolve(builddir)
 
 
-  BuildEventManager = require('./build_event_manager').BuildEventManager
+  BuildEventManager = require('./build_event_manager')
   events = new BuildEventManager()
 
   # load plugins
-  events.register( require('./plugins/echo') )
-  events.register( require('./plugins/jade') )
-
+  # TODO: eventually pull these all from config.json
+  
+  events.register require('./plugins/echo')
+  events.register require('./plugins/jade')
+  events.register require('./plugins/coffee')
+  events.register require('./plugins/less')
 
   events.start('compress')
 
   ###
-  log "Building HTML"
-  assets = renderHTML(c, basedir, builddir)
-  log "Building CSS"
-  renderCSS(c, basedir, builddir, assets.css)
-  log "Building JS"
-  renderJS(c, basedir, builddir, assets.js)
-
   compressBuildFiles(/\.(html|css|js)$/)
   ###
 
@@ -149,7 +143,7 @@ exports.deploy = ()->
   builddir = path.resolve(builddir)
   dcs = c.deploy || []
 
-  u.forEach dcs, (dc)->
+  _.forEach dcs, (dc)->
     # TODO: compress in seperate phase, always append .gz
     # If a deployment wants inline, change file names on transfer
     ###
@@ -195,101 +189,8 @@ exports.clean = ()->
 
 ## Helper functions
 
-###
-renderHTML = (c, basedir, builddir)->
-  assets = {css: {}, js: {}}
-
-  ignores = c.ignore || []
-
-  walkSync basedir, /\.jade$/, (fullname)->
-    filename = fullname.replace(basedir, '').replace(/\//, '')
-    for ignore in ignores
-      return if filename.match(ignore)
-    outputfile = path.join(builddir, filename.replace(/\.jade$/, '.html'))
-    randomname = (Math.random() * 0x100000000 + 1).toString(36)
-    jade.compile(randomname, fullname, outputfile, assets, true)
-
-  assets
-###
-
 
 ## A TREE DIED FOR ME (book)
-
-renderJS = (c, basedir, builddir, jsassets)->
-  # Do all the same things for javascript
-  jsbasedir = c.javascripts.baseDir || 'javascripts'
-  jsbuilddir = path.resolve(path.join(builddir, jsbasedir))
-  jsbasedir = path.resolve(path.join(basedir, jsbasedir))
-
-  jsdata = {}
-
-  # first compile up all coffee files
-  walkSync jsbasedir, /\.coffee$/, (fullname)->
-    filename = fullname.replace(jsbasedir, '').replace(/\//, '')
-    filedata = fs.readFileSync(fullname, 'utf8')
-    jsdata[filename] = coffee.compile(filedata)
-
-  # get all of the regular js files
-  walkSync jsbasedir, /\.js$/, (fullname)->
-    filename = fullname.replace(jsbasedir, '').replace(/\//, '')
-    jsdata[filename] = fs.readFileSync(fullname, 'utf8')
-  
-  jsp = uglifyjs.parser
-  pro = uglifyjs.uglify
-
-  # output to merged JS files
-  u.forEach jsassets, (files, outputname)->
-    outputname = path.join(jsbuilddir, "#{outputname}.js")
-    buffer = ''
-    u.forEach files, (i, assetkey)->
-      unless jsdata[assetkey]?
-        log "Unknown asset #{assetkey}"
-        return
-      buffer += jsdata[assetkey]
-    # write buffer to outputname
-    ast = jsp.parse(buffer)    # parse code and get the initial AST
-    ast = pro.ast_mangle(ast)  # get a new AST with mangled names
-    ast = pro.ast_squeeze(ast) # get an AST with compression optimizations
-    finalCode = pro.gen_code(ast)
-    fs.writeFileSync(outputname, finalCode, 'utf8')
-
-
-renderCSS = (c, basedir, builddir, cssassets)->
-  cssbasedir = c.stylesheets.baseDir || 'stylesheets'
-  cssbuilddir = path.resolve(path.join(builddir, cssbasedir))
-  cssbasedir = path.resolve(path.join(basedir, cssbasedir))
-
-  parser = new less.Parser
-    paths: [cssbasedir], # Specify search paths for @import directives
-    #filename: 'style.less' # Specify a filename, for better error messages
-
-  cssdata = {}
-
-  # first compile up all less files
-  walkSync cssbasedir, /\.less$/, (fullname)->
-    filename = fullname.replace(cssbasedir, '').replace(/\//, '')
-    filedata = fs.readFileSync(fullname, 'utf8')
-    parser.parse filedata, (e, tree)->
-      cssdata[filename] = tree.toCSS(compress: true)
-
-  # get all of the regular css files
-  walkSync cssbasedir, /\.css$/, (fullname)->
-    filename = fullname.replace(cssbasedir, '').replace(/\//, '')
-    cssdata[filename] = fs.readFileSync(fullname, 'utf8')
-  
-  # output to merged CSS files
-  u.forEach cssassets, (files, outputname)->
-    outputname = path.join(cssbuilddir, "#{outputname}.css")
-    buffer = ''
-    u.forEach files, (i, assetkey)->
-      unless cssdata[assetkey]?
-        log "Unknown asset #{assetkey}"
-        return
-      buffer += cssdata[assetkey]
-    # write buffer to outputname
-    finalCode = cleancss.process(buffer)
-    fs.writeFileSync(outputname, finalCode, 'utf8')
-
 
 # compress asset files
 zipFile = (filename, inline)->

@@ -1,7 +1,7 @@
-fs   = require('fs')
-path = require('path')
-jade = require('jade')
-u    = require('underscore')
+_      = require 'underscore'
+fs     = require 'fs'
+{join} = require 'path'
+jade   = require('jade')
 
 basedir  = null
 basepath = '/'
@@ -16,10 +16,10 @@ walkSync = (start, filter, cb)->
   filter = /./ unless filter?
   if fs.statSync(start).isDirectory()
     collection = fs.readdirSync(start).reduce((acc, name)->
-      if fs.statSync(path.join(start, name)).isDirectory()
+      if fs.statSync(join(start, name)).isDirectory()
         acc.dirs.push(name)
       else
-        name = path.join(start, name)
+        name = join(start, name)
         if name.match(filter)
           acc.names.push(name)
       acc
@@ -28,7 +28,7 @@ walkSync = (start, filter, cb)->
     )
     cb(collection.names)
     for dir in collection.dirs
-      walkSync(path.join(start, dir), filter, cb)
+      walkSync(join(start, dir), filter, cb)
   else
     throw new Error("#{start} is not a directory")
 
@@ -42,7 +42,7 @@ inflateFiles = (sourceDir, pattern)->
 
 # force css sourceDir to be the same as the public path
 stylesheets = ()->
-  files = u.flatten(arguments)
+  files = _.flatten(arguments)
 
   # TODO: BAD BAD BAD! Extract /src/ from sourceDir and javascript/baseDir
   sourceDir = 'src/stylesheets'
@@ -55,14 +55,22 @@ stylesheets = ()->
   
   files[pos] = inflateFiles(sourceDir, file) for file, pos in files
 
-  files = u.uniq(u.flatten(files))
+  files = _.uniq(_.flatten(files))
 
-  "<script src='#{stylesheetspath}#{files.join(',')}'></script>\n"
+  scripts = ""
+  for file in files
+    if file.match(/.less$/)
+      scripts += "<link href='#{stylesheetspath}#{file}' rel='stylesheet/less' type='text/css' />\n"
+    else
+      scripts += "<link href='#{stylesheetspath}#{file}' type='text/css' />\n"
+  scripts
+  scripts += "<script src='http://lesscss.googlecode.com/files/less-1.3.0.min.js'></script>\n"
+
 
 
 # TODO: Make "scriptserver" just execute any "javascript" registered renders
 javascripts = ()->
-  files = u.flatten(arguments)
+  files = _.flatten(arguments)
 
   # TODO: BAD BAD BAD! Extract /src/ from sourceDir and javascript/baseDir
   sourceDir = 'src/javascripts'
@@ -75,7 +83,7 @@ javascripts = ()->
   
   files[pos] = inflateFiles(sourceDir, file) for file, pos in files
 
-  files = u.uniq(u.flatten(files))
+  files = _.uniq(_.flatten(files))
 
   scripts = ""
   scripts += "<script src='http://coffeescript.org/extras/coffee-script.js'></script>\n"
@@ -107,7 +115,7 @@ exports.plugin = (req, res, options)->
   data['env'] = envvar
   name = options.name
   name = req.url.replace(basepath, '').replace(/\?.*/, '') unless name
-  filename = options.file || path.join basedir, "#{name}.jade"
+  filename = options.file || join(basedir, "#{name}.jade")
   filedata = fs.readFileSync(filename, 'utf8')
   try
     template = jade.compile(filedata, filename: filename, pretty: !uglify)
@@ -130,8 +138,8 @@ filewrangler = (name, files, squashedmap)->
   fileset = {}
   fileset[file] = 1 for file in [].concat(files)
   # find if we already have a script that matches this whole set.
-  u.forEach squashedmap, (set, setname)->
-    if u.isEqual(fileset, set)
+  _.forEach squashedmap, (set, setname)->
+    if _.isEqual(fileset, set)
       squashedname = setname
       return
   # if no match was found, create a new batch using the name
@@ -154,7 +162,6 @@ exports.compile = (name, filename, outputfile, assets, uglify)->
     stylesheets: compiledstylesheets(name, assets.css)
     javascripts: compiledjavascripts(name, assets.js)
     env: envvar
-
 
   filedata = fs.readFileSync(filename, 'utf8')
 
