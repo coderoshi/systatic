@@ -6,13 +6,9 @@ module.exports =
   name: 'coffeescript'
   defaultEvent: 'scripts'
   build: (config, phaseData)->
-    # jsassets = phaseData.assets.js
-    # ignores = config.ignore || []
-
-    util.compileOut config.javascripts.sourceDir, /\.coffee$/, (filename, filedata, cb)->
-      outputfile = join(config.javascripts.buildDir, "#{filename}.js")
+    util.compileOut config.javascripts.sourceDir, /\.coffee$/, config.javascripts.ignore, (filename, filedata, cb)->
       js = coffee.compile(filedata)
-      cb(outputfile, js)
+      cb join(config.javascripts.buildDir, "#{filename}.js"), js
 
 
 ###

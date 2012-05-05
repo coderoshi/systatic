@@ -8,8 +8,8 @@ bricks    = require('bricks')
 exec      = require('child_process').exec
 
 coffee    = require('coffee-script')
-uglifyjs  = require('uglify-js')
-cleancss  = require('clean-css')
+# uglifyjs  = require('uglify-js')
+# cleancss  = require('clean-css')
 compress  = require('compress-buffer')
 
 exports.config = config = ()->
@@ -119,7 +119,10 @@ exports.build = ()->
   events.register require('./plugins/echo')
   events.register require('./plugins/jade')
   events.register require('./plugins/coffee')
+  events.register require('./plugins/javascript')
   events.register require('./plugins/less')
+  events.register require('./plugins/css')
+  events.register require('./plugins/assetmerger')
 
   events.start('compress')
 

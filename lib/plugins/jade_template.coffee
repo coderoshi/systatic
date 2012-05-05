@@ -1,7 +1,8 @@
-_      = require 'underscore'
-fs     = require 'fs'
-{join} = require 'path'
-jade   = require('jade')
+_          = require 'underscore'
+fs         = require 'fs'
+{join}     = require 'path'
+jade       = require 'jade'
+{walkSync} = require '../utils'
 
 basedir  = null
 basepath = '/'
@@ -11,32 +12,10 @@ javascriptspath = '/javascripts/'
 compiled = false
 
 
-# TODO: move this out to utils
-walkSync = (start, filter, cb)->
-  filter = /./ unless filter?
-  if fs.statSync(start).isDirectory()
-    collection = fs.readdirSync(start).reduce((acc, name)->
-      if fs.statSync(join(start, name)).isDirectory()
-        acc.dirs.push(name)
-      else
-        name = join(start, name)
-        if name.match(filter)
-          acc.names.push(name)
-      acc
-    names: []
-    dirs: []
-    )
-    cb(collection.names)
-    for dir in collection.dirs
-      walkSync(join(start, dir), filter, cb)
-  else
-    throw new Error("#{start} is not a directory")
-
 inflateFiles = (sourceDir, pattern)->
   files = []
-  walkSync sourceDir, pattern, (filenames)->
-    filenames.forEach (fullname)->
-      files.push fullname.replace("#{sourceDir}/", '')
+  walkSync sourceDir, pattern, null, (filename)->
+    files.push filename.replace("#{sourceDir}/", '')
   files
 
 
@@ -49,9 +28,8 @@ stylesheets = ()->
 
   if typeof(files) == 'undefined'
     files =[]
-    walkSync sourceDir, null, (filenames)->
-      filenames.forEach (fullname)->
-        files.push fullname.replace("#{sourceDir}/", '')
+    walkSync sourceDir, null, null, (filename)->
+      files.push filename.replace("#{sourceDir}/", '')
   
   files[pos] = inflateFiles(sourceDir, file) for file, pos in files
 
@@ -77,9 +55,8 @@ javascripts = ()->
   
   if typeof(files) == 'undefined'
     files =[]
-    walkSync sourceDir, null, (filenames)->
-      filenames.forEach (fullname)->
-        files.push fullname.replace("#{sourceDir}/", '')
+    walkSync sourceDir, null, null, (filename)->
+      files.push filename.replace("#{sourceDir}/", '')
   
   files[pos] = inflateFiles(sourceDir, file) for file, pos in files
 
@@ -157,11 +134,17 @@ compiledjavascripts = (name, squashedmap)->
     "<script src=\"#{javascriptspath}#{squashedname}.js\"></script>"
 
 
-exports.compile = (name, filename, outputfile, assets, uglify)->
-  data =
-    stylesheets: compiledstylesheets(name, assets.css)
-    javascripts: compiledjavascripts(name, assets.js)
-    env: envvar
+exports.compile = (name, filename, outputfile, assets, merged, uglify)->
+  if merged
+    data =
+      stylesheets: compiledstylesheets(name, assets.css)
+      javascripts: compiledjavascripts(name, assets.js)
+      env: envvar
+  else
+    data =
+      stylesheets: stylesheets
+      javascripts: javascripts
+      env: envvar
 
   filedata = fs.readFileSync(filename, 'utf8')
 

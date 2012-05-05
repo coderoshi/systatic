@@ -6,18 +6,13 @@ module.exports =
   name: 'less'
   defaultEvent: 'styles'
   build: (config, phaseData)->
-    # cssassets = phaseData.assets.css
-    # ignores = config.ignore || []
-
     parser = new less.Parser
-      paths: [config.stylesheets.sourceDir],   # Specify search paths for @import directives
-      #filename: 'style.less' # Specify a filename, for better error messages
+      paths: [config.stylesheets.sourceDir]
 
-    util.compileOut config.stylesheets.sourceDir, /\.less$/, (filename, filedata, cb)->
-      outputfile = join(config.stylesheets.buildDir, "#{filename}.css")
+    util.compileOut config.stylesheets.sourceDir, /\.less$/, config.stylesheets.ignore, (filename, filedata, cb)->
       parser.parse filedata, (e, tree)->
         css = tree.toCSS(compress: true)
-        cb(outputfile, css)
+        cb join(config.stylesheets.buildDir, "#{filename}.css"), css
 
 ###
 renderCSS = (c, basedir, builddir, cssassets)->

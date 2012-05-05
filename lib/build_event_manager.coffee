@@ -6,9 +6,10 @@ EventEmitter2   = require('eventemitter2').EventEmitter2
 class BuildEventManager extends EventEmitter2
   
   constructor: ()->
-    @events = ['clean', 'documents', 'scripts', 'styles', 'compress', 'publish']
+    @events = ['clean', 'documents', 'scripts', 'styles', 'merge', 'compress', 'publish']
     @userConfig = require(resolve(join('.', 'config.json')))
     @sanitizeConfig @userConfig
+    @plugins = []
 
   sanitizeConfig: (config)->
     sourceDir = config.sourceDir || 'src'
@@ -21,8 +22,8 @@ class BuildEventManager extends EventEmitter2
 
     config.stylesheets ||= {}
     stylesSourceDir = config.stylesheets.sourceDir || 'stylesheets'
-    config.stylesheets['sourceDir'] = resolve(join(sourceDir, stylesSourceDir))
-    config.stylesheets['buildDir'] = resolve(join(buildDir, stylesSourceDir))
+    config.stylesheets.sourceDir = resolve(join(sourceDir, stylesSourceDir))
+    config.stylesheets.buildDir = resolve(join(buildDir, stylesSourceDir))
 
     config.javascripts ||= {}
     scriptsSourceDir = config.javascripts.sourceDir || 'javascripts'
@@ -30,6 +31,8 @@ class BuildEventManager extends EventEmitter2
     config.javascripts.buildDir = resolve(join(buildDir, scriptsSourceDir))
 
   register: (plugin)->
+    @plugins.push plugin
+    return false unless plugin.defaultEvent?
     if plugin.defaultEvent == 'all'
       # register for every event
       @on event, plugin.build for event in @events
@@ -38,9 +41,15 @@ class BuildEventManager extends EventEmitter2
     else if plugin.defaultEvent == 'all:pre'
       @on "#{event}:post", plugin.build for event in @events
     else
-      @on plugin.defaultEvent, ()->
-        console.log "  [#{plugin.name}]"
-        plugin.build(arguments...)
+      events = null
+      if typeof(plugin.defaultEvent) == 'string'
+        events = [plugin.defaultEvent]
+      else
+        events = plugin.defaultEvent
+      for event in events
+        @on event, ()->
+          console.log "  [#{plugin.name}]"
+          plugin.build(arguments...)
 
 
   # loop through event list and emits
@@ -49,7 +58,14 @@ class BuildEventManager extends EventEmitter2
   start: (toEvent)->
     return false unless _.include(@events, toEvent)
 
-    phaseData = {}
+    phaseData =
+      lastEvent : toEvent
+      plugins   : @plugins
+      upToPhase : (phaseName)=>
+        for e in @events
+          return true if e == phaseName
+          break if e == toEvent
+        false
 
     #process.nextTick ()=> @emit('setup', @userConfig)
     phaseData.event = 'setup'

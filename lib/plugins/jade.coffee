@@ -2,17 +2,26 @@ util   = require('../utils')
 jade   = require('./jade_template')
 {join} = require('path')
 
+# TODO: what about binding to phases? eg:
+# documents: (...)->
+# merge:     (...)->
+
 module.exports =
   name: 'jade'
   defaultEvent: 'documents'
   build: (config, phaseData)->
     assets = phaseData.assets = {css: {}, js: {}}
-    ignores = config.ignore || []
 
-    util.walkSync config.sourceDir, /\.jade$/, (fullname)->
+    # TODO: when compiling, use new compiled assets, not the source file types
+
+    # only merge assets if merge phase is called (and has a merge plugin attached)
+    merged = phaseData.upToPhase('merge')
+
+    # IDEA! Can merge plugin be responsible to defining document merge functions?
+    # then only if it's involved will merge ever happen!!
+
+    util.walkSync config.sourceDir, /\.jade$/, config.ignore, (fullname)->
       filename = fullname.replace(config.sourceDir, '').replace(/\//, '')
-      for ignore in ignores
-        return if filename.match(ignore)
       outputfile = join(config.buildDir, filename.replace(/\.jade$/, '.html'))
       randomname = (Math.random() * 0x100000000 + 1).toString(36)
-      jade.compile(randomname, fullname, outputfile, assets, true)
+      jade.compile(randomname, fullname, outputfile, assets, merged, true)

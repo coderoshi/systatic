@@ -5,7 +5,7 @@ fs     = require('fs')
 # TODO: make this more systatic-centric. pass in where you wish
 # to walk: source, build, javascripts, stylesheets, images.
 # Optionally show ignored files (false by default)
-exports.walkSync = walkSync = (start, filter, cb)->
+exports.walkSync = walkSync = (start, filter, ignores, cb)->
   filter = /./ unless filter?
   if fs.statSync(start).isDirectory()
     collection = fs.readdirSync(start).reduce((acc, name)->
@@ -13,7 +13,11 @@ exports.walkSync = walkSync = (start, filter, cb)->
         acc.dirs.push(name)
       else
         if name.match(filter)
-          acc.names.push(join(start, name))
+          ignored = false
+          if ignores
+            for ignore in ignores
+              ignored ||= true if name.match(ignore)
+          acc.names.push(join(start, name)) unless ignored
       acc
     names: []
     dirs: []
@@ -26,8 +30,8 @@ exports.walkSync = walkSync = (start, filter, cb)->
     throw new Error("#{start} is not a directory")
 
 
-exports.compileOut = (basedir, filter, cb)->
-  walkSync basedir, filter, (fullname)->
+exports.compileOut = (basedir, filter, ignores, cb)->
+  walkSync basedir, filter, ignores, (fullname)->
     filename = fullname.replace(basedir, '').replace(/\//, '')
     filedata = fs.readFileSync(fullname, 'utf8')
     cb filename, filedata, (outputfile, output)->
