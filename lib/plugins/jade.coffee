@@ -1,6 +1,6 @@
-util   = require('../utils')
-jade   = require('./jade_template')
-{join} = require('path')
+{walkSync} = require('../utils')
+{join}     = require('path')
+jade       = require('./jade_template')
 
 # TODO: what about binding to phases? eg:
 # documents: (...)->
@@ -20,7 +20,7 @@ module.exports =
     # IDEA! Can merge plugin be responsible to defining document merge functions?
     # then only if it's involved will merge ever happen!!
 
-    util.walkSync config.sourceDir, /\.jade$/, config.ignore, (fullname)->
+    walkSync config.sourceDir, /\.jade$/, config.ignore, (fullname)->
       filename = fullname.replace(config.sourceDir, '').replace(/\//, '')
       outputfile = join(config.buildDir, filename.replace(/\.jade$/, '.html'))
       randomname = (Math.random() * 0x100000000 + 1).toString(36)

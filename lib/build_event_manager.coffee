@@ -5,11 +5,16 @@ EventEmitter2   = require('eventemitter2').EventEmitter2
 # Running this emits all steps in order
 class BuildEventManager extends EventEmitter2
   
-  constructor: ()->
-    @events = ['clean', 'documents', 'scripts', 'styles', 'merge', 'compress', 'publish']
+  constructor: (pluginManager)->
+    #@events = ['clean', 'documents', 'scripts', 'styles', 'merge', 'compress', 'publish']
+    @events = ['documents', 'scripts', 'styles', 'merge', 'compress', 'publish']
     @userConfig = require(resolve(join('.', 'config.json')))
     @sanitizeConfig @userConfig
-    @plugins = []
+    
+    @pluginManager = pluginManager
+    @pluginManager.getPlugins().forEach (plugin)=>
+      @register plugin
+
 
   sanitizeConfig: (config)->
     sourceDir = config.sourceDir || 'src'
@@ -30,8 +35,8 @@ class BuildEventManager extends EventEmitter2
     config.javascripts.sourceDir = resolve(join(sourceDir, scriptsSourceDir))
     config.javascripts.buildDir = resolve(join(buildDir, scriptsSourceDir))
 
+
   register: (plugin)->
-    @plugins.push plugin
     return false unless plugin.defaultEvent?
     if plugin.defaultEvent == 'all'
       # register for every event
@@ -59,8 +64,8 @@ class BuildEventManager extends EventEmitter2
     return false unless _.include(@events, toEvent)
 
     phaseData =
-      lastEvent : toEvent
-      plugins   : @plugins
+      lastEvent     : toEvent
+      pluginManager : @pluginManager
       upToPhase : (phaseName)=>
         for e in @events
           return true if e == phaseName

@@ -1,16 +1,14 @@
-_         = require('underscore')
-log       = console.log
-fs        = require('fs')
-path      = require('path')
-jade      = require(path.join(__dirname, 'plugins', 'jade_template'))
-servitude = require('servitude')
-bricks    = require('bricks')
-exec      = require('child_process').exec
+_          = require('underscore')
+log        = console.log
+fs         = require('fs')
+path       = require('path')
+jade       = require(path.join(__dirname, 'plugins', 'jade_template'))
+servitude  = require('servitude')
+bricks     = require('bricks')
+exec       = require('child_process').exec
+{walkSync} = require('./utils')
 
-coffee    = require('coffee-script')
-# uglifyjs  = require('uglify-js')
-# cleancss  = require('clean-css')
-compress  = require('compress-buffer')
+## A TREE DIED FOR ME (book)
 
 exports.config = config = ()->
   return @configData if @configData?
@@ -100,6 +98,7 @@ exports.build = ()->
 
   builddir = c.buildDir || 'build'
 
+  # TODO: this should be part of utils.compileOut
   try
     fs.mkdirSync(builddir)
     #fs.mkdirSync("#{builddir}/derp")
@@ -107,36 +106,14 @@ exports.build = ()->
     fs.mkdirSync("#{builddir}/javascripts")
   catch e
 
-  builddir = path.resolve(builddir)
-
-
-  BuildEventManager = require('./build_event_manager')
-  events = new BuildEventManager()
+  events = buildEventManager()
 
   # load plugins
   # TODO: eventually pull these all from config.json
-  
-  events.register require('./plugins/echo')
-  events.register require('./plugins/jade')
-  events.register require('./plugins/coffee')
-  events.register require('./plugins/javascript')
-  events.register require('./plugins/less')
-  events.register require('./plugins/css')
-  events.register require('./plugins/assetmerger')
 
   events.start('compress')
 
-  ###
-  compressBuildFiles(/\.(html|css|js)$/)
-  ###
-
   log "Done"
-
-compressBuildFiles = (c, pattern)->
-  log "Compressing Assets"
-  #inline = dc.compress == "inline"
-  walkSync builddir, pattern, (fullname)->
-    zipFile(fullname, false) #inline)
 
 
 # Copies all built files to a remote source, like S3
@@ -147,22 +124,12 @@ exports.deploy = ()->
   dcs = c.deploy || []
 
   _.forEach dcs, (dc)->
-    # TODO: compress in seperate phase, always append .gz
-    # If a deployment wants inline, change file names on transfer
-    ###
-    if dc.compress? && dc.compress.toString() != "false"
-      log "Compressing Assets"
-      inline = dc.compress == "inline"
-      walkSync builddir, /\.(html|css|js)$/, (fullname)->
-        zipFile(fullname, inline)
-    ###
-
     s3 = require('noxmox').nox.createClient
       key: dc.access_key_id
       secret: dc.secret_access_key
       bucket: dc.bucket
 
-    walkSync builddir, null, (fullname)->
+    walkSync builddir, null, null, (fullname)->
       filename = fullname.replace(builddir, '').replace(/\//, '')
       data = fs.readFileSync(fullname)
       headers = { 'Content-Length': data.length, 'x-amz-acl':'public' }
@@ -177,53 +144,17 @@ exports.deploy = ()->
         res.on 'data', (chunk)-> log chunk
         res.on 'end', ()-> log 'File is now stored on S3' if res.statusCode == 200
 
-
   log "Deployed"
 
 
 exports.clean = ()->
-  c = config()
-  builddir = c.buildDir || 'build'
-  if builddir == '.' || builddir.match(/^\//) || builddir == '~' || builddir == ''
-    return log('No.')
-  exec "rm -rf #{builddir}", (error, stdout, stderr)->
-    log error
+  events = buildEventManager()
 
+  #events.start('clean')
 
-## Helper functions
-
-
-## A TREE DIED FOR ME (book)
-
-# compress asset files
-zipFile = (filename, inline)->
-  data = fs.readFileSync(filename, 'utf8')
-  compressedData = compress.compress(new Buffer(data))
-  outputname = if inline then filename else "#{filename}.gz"
-  fs.writeFileSync(outputname, compressedData, 'utf8')
-
-
-
-# Walks directories and finds files matching the given filter
-# TODO: make this more systatic-centric. pass in where you wish
-# to walk: source, build, javascripts, stylesheets, images.
-# Optionally show ignored files (false by default)
-walkSync = (start, filter, cb)->
-  filter = /./ unless filter?
-  if fs.statSync(start).isDirectory()
-    collection = fs.readdirSync(start).reduce((acc, name)->
-      if fs.statSync(path.join(start, name)).isDirectory()
-        acc.dirs.push(name)
-      else
-        if name.match(filter)
-          acc.names.push(path.join(start, name))
-      acc
-    names: []
-    dirs: []
-    )
-    if collection.names.length > 0
-      collection.names.forEach (fullname)-> cb(fullname)
-    for dir in collection.dirs
-      walkSync(path.join(start, dir), filter, cb)
-  else
-    throw new Error("#{start} is not a directory")
+buildEventManager = ()->
+  BuildEventManager = require('./build_event_manager')
+  PluginManager     = require('./plugin_manager')
+  plugins = new PluginManager()
+  events  = new BuildEventManager(plugins)
+  events

@@ -1,6 +1,8 @@
 fs     = require('fs')
 {join} = require('path')
 
+# TODO: DO NOT USE A CALLBACK IN compileOut... use return []
+
 # Walks directories and finds files matching the given filter
 # TODO: make this more systatic-centric. pass in where you wish
 # to walk: source, build, javascripts, stylesheets, images.
@@ -25,7 +27,7 @@ exports.walkSync = walkSync = (start, filter, ignores, cb)->
     if collection.names.length > 0
       collection.names.forEach (fullname)-> cb(fullname)
     for dir in collection.dirs
-      walkSync(join(start, dir), filter, cb)
+      walkSync(join(start, dir), filter, ignores, cb)
   else
     throw new Error("#{start} is not a directory")
 
