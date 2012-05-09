@@ -1,6 +1,7 @@
 _          = require('underscore')
 log        = console.log
 fs         = require('fs')
+nfs        = require('node-fs')
 path       = require('path')
 jade       = require(path.join(__dirname, 'plugins', 'jade_template'))
 servitude  = require('servitude')
@@ -92,27 +93,7 @@ exports.test = (port, ipaddr, logfile)->
 
 # Compiles and compacts all assets into a minimal set of files
 exports.build = ()->
-  c = config()
-  basedir = c.sourceDir || 'src'
-  basedir = path.resolve(basedir)
-
-  builddir = c.buildDir || 'build'
-
-  # TODO: this should be part of utils.compileOut
-  try
-    fs.mkdirSync(builddir)
-    #fs.mkdirSync("#{builddir}/derp")
-    fs.mkdirSync("#{builddir}/stylesheets")
-    fs.mkdirSync("#{builddir}/javascripts")
-  catch e
-
-  events = buildEventManager()
-
-  # load plugins
-  # TODO: eventually pull these all from config.json
-
-  events.start('compress')
-
+  buildManager().start('compress')
   log "Done"
 
 
@@ -148,13 +129,13 @@ exports.deploy = ()->
 
 
 exports.clean = ()->
-  events = buildEventManager()
+  buildManager().start('clean')
+  log "Done"
 
-  #events.start('clean')
-
-buildEventManager = ()->
-  BuildEventManager = require('./build_event_manager')
-  PluginManager     = require('./plugin_manager')
+buildManager = ()->
+  BuildManager  = require('./build_manager')
+  PluginManager = require('./plugin_manager')
+  configData    = require(path.resolve(path.join('.', 'config.json')))
   plugins = new PluginManager()
-  events  = new BuildEventManager(plugins)
+  events  = new BuildManager(configData, plugins)
   events

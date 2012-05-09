@@ -1,6 +1,7 @@
 {walkSync} = require('../utils')
 {join}     = require('path')
 jade       = require('./jade_template')
+nfs        = require('node-fs')
 
 # TODO: what about binding to phases? eg:
 # documents: (...)->
@@ -24,4 +25,5 @@ module.exports =
       filename = fullname.replace(config.sourceDir, '').replace(/\//, '')
       outputfile = join(config.buildDir, filename.replace(/\.jade$/, '.html'))
       randomname = (Math.random() * 0x100000000 + 1).toString(36)
+      nfs.mkdirSync(outputfile.replace(/\/[^/]+$/, ''), 0777, true)
       jade.compile(randomname, fullname, outputfile, assets, merged, true)

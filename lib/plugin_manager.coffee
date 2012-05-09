@@ -2,20 +2,24 @@ fs = require('fs')
 
 # seeks plugins to load
 class PluginManager
+  pluginDir: "#{__dirname}/plugins"
 
-  constructor: ()->
-    @plugins = []
+  constructor: (config)->
+    @plugins = {}
     @loadPlugins()
+    @config = config
 
   # currently only loads local plugins
+  # TODO: load plugins based on config
   loadPlugins: ()->
-    pluginDir = "#{__dirname}/plugins"
-    fs.readdirSync(pluginDir).forEach (name)=>
-      @addPlugin require("#{pluginDir}/#{name}")
+    fs.readdirSync(@pluginDir).forEach (name)=>
+      @addPlugin require("#{@pluginDir}/#{name}")
 
   addPlugin: (plugin)->
-    @plugins.push plugin
+    phase = (@plugins[plugin.defaultEvent] ||= [])
+    phase.push plugin
 
-  getPlugins: ()-> @plugins
+  getPlugins: (phase)->
+    @plugins[phase] || []
 
 module.exports = PluginManager
