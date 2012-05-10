@@ -66,10 +66,7 @@ class BuildManager
   serialPhase: ()->
     @currentPhase = @phaseSequence.shift()
     return true unless @currentPhase?
-    # @exec("#{@currentPhase}:pre", @phaseData)
     @exec(@currentPhase, @phaseData)
-    # @exec("#{@currentPhase}:post", @phaseData)
-    # @serialPhase(phaseSequence, phaseData)
 
   # TODO: create two kinds of plugins: standard (sync) and async
   # sync are not responsible for calling referenceContinue
@@ -86,7 +83,7 @@ class BuildManager
     if plugins.length == 0
       @serialPhase()
       return
-    
+
     # first push them all onto the stack...
     @pluginCallPush(plugin) for plugin in plugins
 
@@ -94,6 +91,13 @@ class BuildManager
     for plugin in plugins
       console.log "  [#{plugin.name}]" unless plugin.label == false
       plugin.build(@config, phaseData, @pluginCallPop)
+
+    # TODO: we let these plugins be async, but they never return control. W.T.F!?
+
+    # IDEA! multiple plugins fail because the first pushes on the stack, but after popping,
+    # it returns control to this main code. but since the plugincount is still zero, it doesn't
+    # call the serial phase, so there's nothing left to execute and it just ends.
+    # BUT... why doesn't the second code keep running....???
 
   pluginCallPush: (plugin)=>
     @pluginCounts++
