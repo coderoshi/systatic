@@ -42,10 +42,10 @@ var port = argv.port || 3000,
 if (argv._.length > 0) {
   if (argv._[0] === 'build') {
     systatic.build();
-    process.exit(0);
+    // process.exit(0);
   }
-  if (argv._[0] === 'deploy') {
-    systatic.deploy();
+  if (argv._[0] === 'publish') {
+    systatic.publish();
     process.exit(0);
   }
   if (argv._[0] === 'clean') {

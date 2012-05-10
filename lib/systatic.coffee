@@ -1,7 +1,5 @@
-_          = require('underscore')
 log        = console.log
-fs         = require('fs')
-nfs        = require('node-fs')
+{join}     = require('path')
 path       = require('path')
 jade       = require(path.join(__dirname, 'plugins', 'jade_template'))
 servitude  = require('servitude')
@@ -13,14 +11,14 @@ exec       = require('child_process').exec
 
 exports.config = config = ()->
   return @configData if @configData?
-  @configData = require(path.resolve(path.join('.', 'config.json')))
+  @configData = require(path.resolve(join('.', 'config.json')))
 
 exports.inProject = (dirname)->
-  return true if path.existsSync(path.join(dirname, 'config.json'))
+  return true if path.existsSync(join(dirname, 'config.json'))
   false
 
 exports.clone = (dirname, template)->
-  templatePath = path.join(__dirname, '..', 'templates', template)
+  templatePath = join(__dirname, '..', 'templates', template)
   log "Generating project #{dirname}"
   exec "cp -R #{templatePath} #{dirname}", (error, stdout, stderr)->
     log error
@@ -34,7 +32,7 @@ getPlugin = (value, appserver)->
 assetRoute = (appserver, asset)->
   c = config()
   basedir = c.sourceDir || 'src'
-  appserver.addRoute(c[asset].route, getPlugin(c[asset].plugin, appserver), basedir: path.join(basedir, c[asset].baseDir))
+  appserver.addRoute(c[asset].route, getPlugin(c[asset].plugin, appserver), basedir: join(basedir, c[asset].baseDir))
 
 exports.startServer = (port, ipaddr, logfile)->
   c = config()
@@ -94,48 +92,22 @@ exports.test = (port, ipaddr, logfile)->
 # Compiles and compacts all assets into a minimal set of files
 exports.build = ()->
   buildManager().start('compress')
-  log "Done"
-
+  log "Built"
 
 # Copies all built files to a remote source, like S3
-exports.deploy = ()->
-  c = config()
-  builddir = c.buildDir || 'build'
-  builddir = path.resolve(builddir)
-  dcs = c.deploy || []
+exports.publish = ()->
+  buildManager().start('publish')
+  log "Published"
 
-  _.forEach dcs, (dc)->
-    s3 = require('noxmox').nox.createClient
-      key: dc.access_key_id
-      secret: dc.secret_access_key
-      bucket: dc.bucket
-
-    walkSync builddir, null, null, (fullname)->
-      filename = fullname.replace(builddir, '').replace(/\//, '')
-      data = fs.readFileSync(fullname)
-      headers = { 'Content-Length': data.length, 'x-amz-acl':'public' }
-      headers['Content-Encoding'] = 'gzip' if filename.match(/.gz$/)
-      req = s3.put(filename, headers)
-      log filename
-      req.on 'continue', ()->
-        log "pushing #{filename}"
-        req.end(data)
-      req.on 'response', (res)->
-        log "responding #{filename}"
-        res.on 'data', (chunk)-> log chunk
-        res.on 'end', ()-> log 'File is now stored on S3' if res.statusCode == 200
-
-  log "Deployed"
-
-
+# Deletes the build directory
 exports.clean = ()->
   buildManager().start('clean')
-  log "Done"
+  log "Cleaned"
 
 buildManager = ()->
-  BuildManager  = require('./build_manager')
-  PluginManager = require('./plugin_manager')
+  BuildManager  = require('./build_manager').BuildManager
+  PluginManager = require('./plugin_manager').PluginManager
   configData    = require(path.resolve(path.join('.', 'config.json')))
-  plugins = new PluginManager()
-  events  = new BuildManager(configData, plugins)
+  plugins       = new PluginManager(configData)
+  events        = new BuildManager(configData, plugins)
   events

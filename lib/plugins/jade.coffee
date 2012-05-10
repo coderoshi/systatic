@@ -9,8 +9,8 @@ nfs        = require('node-fs')
 
 module.exports =
   name: 'jade'
-  defaultEvent: 'documents'
-  build: (config, phaseData)->
+  phase: 'documents'
+  build: (config, phaseData, next)->
     assets = phaseData.assets = {css: {}, js: {}}
 
     # TODO: when compiling, use new compiled assets, not the source file types
@@ -27,3 +27,4 @@ module.exports =
       randomname = (Math.random() * 0x100000000 + 1).toString(36)
       nfs.mkdirSync(outputfile.replace(/\/[^/]+$/, ''), 0777, true)
       jade.compile(randomname, fullname, outputfile, assets, merged, true)
+    next()

@@ -11,21 +11,25 @@ uglifyjs   = require('uglify-js')
 # merges css and javascript files into single files
 module.exports =
   name: 'assetmerger'
-  defaultEvent: 'merge'
+  phase: 'merge'
   publics: {
     # a hash of public functions meant for other plugins to use
   }
-  build: (config, phaseData)->
+  build: (config, phaseData, next)->
 
-    # phaseData.event
-    # phaseData.lastEvent
+    # phaseData.phase
+    # phaseData.lastPhase
 
     # read all css asset files
-    mergeCSS config.stylesheets.buildDir, phaseData.assets.css
-    mergeJS  config.javascripts.buildDir, phaseData.assets.js
+    mergeCSS config.stylesheets.buildDir, phaseData.assets?.css
+    mergeJS  config.javascripts.buildDir, phaseData.assets?.js
+
+    next()
 
 
 mergeCSS = (buildDir, assets)->
+  return false unless assets?
+
   cssdata = {}
 
   # get all of the regular css files
@@ -50,6 +54,8 @@ mergeCSS = (buildDir, assets)->
     fs.writeFileSync(outputname, finalCode, 'utf8')
 
 mergeJS = (buildDir, assets)->
+  return false unless assets?
+
   jsdata = {}
 
   jsp = uglifyjs.parser

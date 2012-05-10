@@ -1,11 +1,13 @@
 _               = require('underscore')
 {join, resolve} = require('path')
 
+# TODO: remove scripts/style/merge and replace with 'assets'?
+exports.phases = phases = ['clean', 'setup', 'documents', 'scripts', 'styles', 'merge', 'test', 'compress', 'publish']
+# exports.phases = phases = ['setup', 'documents', 'scripts', 'styles', 'merge', 'test', 'compress', 'publish']
+
 # Running this emits all steps in order
 class BuildManager
-  # TODO: remove scripts/style/merge and replace with 'assets'?
-  #events: ['clean', 'documents', 'scripts', 'styles', 'merge', 'test', 'compress', 'publish']
-  events: ['setup', 'documents', 'scripts', 'styles', 'merge', 'test', 'compress', 'publish']
+  phases: phases
 
   constructor: (config, pluginManager)->
     @pluginManager = pluginManager
@@ -30,42 +32,76 @@ class BuildManager
     config.javascripts.sourceDir = resolve(join(sourceDir, scriptsSourceDir))
     config.javascripts.buildDir = resolve(join(buildDir, scriptsSourceDir))
 
-  # loop through event list and emits
+  # loop through phase list and emits
   # each step must fully execute before completion
-  # registered events manage their own execution
-  start: (toEvent)->
-    return false unless _.include(@events, toEvent)
+  # registered phases manage their own execution
+  start: (toPhase)->
+    return false unless _.include(@phases, toPhase)
 
-    phaseData =
-      lastEvent     : toEvent
+    @phaseSequence = @buildPhaseSequence(toPhase)
+    @pluginCounts = 0
+    @phaseData =
+      lastPhase     : toPhase
       pluginManager : @pluginManager
       upToPhase : (phaseName)=>
-        for e in @events
+        for e in @phases
           return true if e == phaseName
-          break if e == toEvent
+          break if e == toPhase
         false
 
-    for event in @events
-      #process.nextTick ()=> @emit(event, @config)
-      @emit(event, ':pre', phaseData)
-      @emit(event, '', phaseData)
-      @emit(event, ':post', phaseData)
+    @serialPhase()
 
-      return true if toEvent == event
+    true
+
+  buildPhaseSequence: (toPhase)->
+    sequence = []
+    for phase in @phases
+      sequence.push "#{phase}:pre"
+      sequence.push phase
+      sequence.push "#{phase}:post"
+      break if phase == toPhase
+    sequence
+
+
+  serialPhase: ()->
+    @currentPhase = @phaseSequence.shift()
+    return true unless @currentPhase?
+    # @exec("#{@currentPhase}:pre", @phaseData)
+    @exec(@currentPhase, @phaseData)
+    # @exec("#{@currentPhase}:post", @phaseData)
+    # @serialPhase(phaseSequence, phaseData)
+
+  # TODO: create two kinds of plugins: standard (sync) and async
+  # sync are not responsible for calling referenceContinue
+
+  # each of these calls are performed serially, and
+  # do not return until all attached phases return
+  exec: (phase, phaseData)->
+    # the results of this 
+    phaseData.phase = phase
+
+    # console.log "Phase: #{phase}"
+
+    plugins = @pluginManager.getPlugins(phase)
+    if plugins.length == 0
+      @serialPhase()
+      return
     
-    return true
+    # first push them all onto the stack...
+    @pluginCallPush(plugin) for plugin in plugins
 
-  emit: (phase, suffix, phaseData)->
-    phaseData.event = "#{phase}#{suffix}"
-    if suffix == ':pre' || suffix == ''
-      for plugin in @pluginManager.getPlugins("all#{suffix}")
-        plugin.build(@config, phaseData)
-    for plugin in @pluginManager.getPlugins("#{phase}#{suffix}")
-      console.log "  [#{plugin.name}]"
-      plugin.build(@config, phaseData)
-    if suffix == ':post'
-      for plugin in @pluginManager.getPlugins("all#{suffix}")
-        plugin.build(@config, phaseData)
+    # now run them, and let them pop themselves off...
+    for plugin in plugins
+      console.log "  [#{plugin.name}]" unless plugin.label == false
+      plugin.build(@config, phaseData, @pluginCallPop)
+
+  pluginCallPush: (plugin)=>
+    @pluginCounts++
+
+  pluginCallPop: ()=>
+    @pluginCounts--
+    @serialPhase() if @pluginCounts <= 0
 
 
-module.exports = BuildManager
+
+exports.BuildManager = BuildManager

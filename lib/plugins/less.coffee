@@ -4,8 +4,8 @@ less   = require('less')
 
 module.exports =
   name: 'less'
-  defaultEvent: 'styles'
-  build: (config, phaseData)->
+  phase: 'styles'
+  build: (config, phaseData, next)->
     parser = new less.Parser
       paths: [config.stylesheets.sourceDir]
 
@@ -13,3 +13,4 @@ module.exports =
       parser.parse filedata, (e, tree)->
         css = tree.toCSS(compress: true)
         cb join(config.stylesheets.buildDir, "#{filename}.css"), css
+    next()

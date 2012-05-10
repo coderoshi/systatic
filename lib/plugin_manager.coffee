@@ -15,11 +15,19 @@ class PluginManager
     fs.readdirSync(@pluginDir).forEach (name)=>
       @addPlugin require("#{@pluginDir}/#{name}")
 
+    # If logging is turned on?
+    # console.log @plugins
+
   addPlugin: (plugin)->
-    phase = (@plugins[plugin.defaultEvent] ||= [])
-    phase.push plugin
+    phases = plugin.phase
+    if typeof(plugin.phase) == 'string'
+      phases = [plugin.phase]
+    return false unless phases?
+    for phase in phases
+      phasePlugins = (@plugins[phase] ||= [])
+      phasePlugins.push plugin
 
   getPlugins: (phase)->
     @plugins[phase] || []
 
-module.exports = PluginManager
+exports.PluginManager = PluginManager
