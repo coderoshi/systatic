@@ -25,50 +25,52 @@ The default generated project will come with a config.json file. This file defin
 
 Since the point is to generate a static site, the next command you run will be `build`. This will remove the need for an app server like nodejs, and allow you to just dump the static files somewhere like CloudFront.
 
+It orders static site building into phases, similar to larger build systems like Maven.
+
+Stages (executing a stage executes every stage up to it):
+
+* setup
+* clean
+* documents
+* scripts
+* styles
+* merge
+* test
+* compress
+* publish
+
+Choosing a phase will run all attached plugins up to and including that phase.
+
 ```
-systatic build
+systatic merge
 ```
 
-## Test
-
-Once your static files are built and compressed, you can test out the files output in the `build` directory with the `test` command. This just runs a static server on the same development port in your `config.json` file.
+Cleans the output directory, build the html resource, build the assets, and merge them into minimal files.
 
 ```
 systatic test
 ```
 
+Does the same thing, but then also runs any optional static integration test (currently no implementations, but considering something like QUnit)
+
 # Coming Soon
 
-## Deploy
+## Publish
 
 With that generated static content, next you'll want to deploy to some server, git repo, CDN... whatever.
 
 ```
-systatic deploy
+systatic publish
 ```
 
 ## Hooks
 
-I'm reimplementing the hard-coded actions as sets of discreet stages which can be configured, allowing third-party plugins to add their own stage to the build/render toolchain. Current thoughts:
+I'm considering reimplementing the hard-coded plugins to work with npm plugins, which con be configured per project. This is to allow third-party plugins to add their own stage to the build/render toolchain.
 
-First:
+## Misc
+
+Current thoughts:
 
 * Every action can be attached to run before/after any other action.
 
-An example may be if someone wanted to added a function to compress a set of icons used as CSS into sprites, and pass that information into the next action (which would be bound to the compress stage)
-
-Stages (executing a stage executes every stage up to it):
-
-* clean
-* resource
-* assets
-* compress
-* publish
-
-eg.
-
-```
-systatic assets
-```
-
-Would clean the output directory, build the html resource, and build the assets.
+An example may be if someone wanted to added a function to compress a set of icons used as CSS into sprites, and pass that information into the next action (which would be bound to the compress stage).
