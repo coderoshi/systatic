@@ -1,4 +1,5 @@
 {rmdirSyncRecursive} = require('wrench')
+{existsSync} = require('path')
 
 module.exports =
   name: 'clean'
@@ -7,7 +8,9 @@ module.exports =
     builddir = config.buildDir
 
     if builddir == '.' || builddir.match(/^\/$/) || builddir == '~' || builddir == ''
-      return console.log "Nope. Won't delete #{builddir}"
+      return console.log "Nope. Won't delete '#{builddir}'. Please fix your config"
 
-    rmdirSyncRecursive(builddir)
+    if existsSync(builddir)
+      rmdirSyncRecursive(builddir)
+    
     next()

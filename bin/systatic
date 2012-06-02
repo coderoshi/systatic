@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 var log = console.log,
-    coffee = require('coffee-script'),
+    coffee = require('iced-coffee-script'),
     argv = require('optimist').argv,
     systatic = require('../lib/systatic');
 

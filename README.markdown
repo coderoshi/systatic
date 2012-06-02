@@ -1,6 +1,6 @@
 # Systatic: Static Site Authoring Tool in NodeJS
 
-Inspired by [Middleman](http://middlemanapp.com), this Node.js toolchain is written with [Bricks](http://bricksjs.com) and [Servitude](https://github.com/JerrySievert/servitude), to allow the quick authoring if static web apps.
+Inspired by [Middleman](http://middlemanapp.com), this Node.js toolchain is written with [Bricks](http://bricksjs.com) and a collection of plugins to allow the quick authoring if static web apps.
 
 The focus here is to quickly develop and deploy apps that are heavier on CSS or Javascript, leveraging tools that allow the least amount of typing to get the job done (eg. Less, Stylus, CoffeeScript, Jade). Finally, to optimize file management so your apps load as quickly as possible (presumably via some CDN).
 

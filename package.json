@@ -16,12 +16,13 @@
     "node": "~>0.6.0"
   },
   "dependencies": {
+    "iced-coffee-script" : "~>1.3.3a",
     "optimist"        : "~>0.2.0",
     "node-fs"         : "~>0.1.3",
     "wrench"          : "~>1.3.8",
     "bricks"          : "~>1.1.4",
     "servitude"       : "~>0.2.0",
-    "coffee-script"   : "~>1.2.0",
+    "coffee-script"   : "~>1.3.3",
     "jade"            : "~>0.21.0",
     "less"            : "~>1.3.0",
     "bricks"          : "~>1.1.4",

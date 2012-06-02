@@ -1,3 +1,6 @@
+iced.catchExceptions()
+
+
 log        = console.log
 {join}     = require('path')
 path       = require('path')

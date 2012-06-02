@@ -39,5 +39,5 @@ exports.compileOut = (basedir, filter, ignores, cb)->
     filename = fullname.replace(basedir, '').replace(/\//, '')
     filedata = fs.readFileSync(fullname, 'utf8')
     cb filename, filedata, (outputfile, output)->
-      nfs.mkdirSync(outputfile.replace(/\/[^/]+$/, ''), 0777, true)
+      nfs.mkdirSync(outputfile.replace(/\/[^/]+$/, ''), 0o777, true)
       fs.writeFileSync(outputfile, output, 'utf8')
