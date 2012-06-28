@@ -3,7 +3,7 @@ _               = require('underscore')
 
 # TODO: remove scripts/style/merge and replace with 'assets'?
 # exports.phases = phases = ['setup', 'clean', 'documents', 'scripts', 'styles', 'merge', 'test', 'compress', 'publish']
-exports.phases = phases = ['setup', 'clean', 'documents', 'scripts', 'styles', 'merge', 'test', 'compress', 'publish']
+exports.phases = phases = ['setup', 'documents'] #, 'scripts', 'styles', 'merge', 'test', 'compress', 'publish']
 
 
 # Running this emits all steps in order

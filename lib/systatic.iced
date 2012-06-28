@@ -1,6 +1,3 @@
-iced.catchExceptions()
-
-
 log        = console.log
 {join}     = require('path')
 path       = require('path')
@@ -9,6 +6,9 @@ servitude  = require('servitude')
 bricks     = require('bricks')
 exec       = require('child_process').exec
 {walkSync} = require('./utils')
+
+# iced       = require('iced-coffee-script')
+# iced.catchExceptions()
 
 ## A TREE DIED FOR ME (book)
 
