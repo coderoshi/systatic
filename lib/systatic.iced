@@ -1,7 +1,7 @@
 log        = console.log
 {join}     = require('path')
 path       = require('path')
-fs	       = requuire('fs')
+fs	       = require('fs')
 jade       = require(path.join(__dirname, 'plugins', 'jade_template'))
 servitude  = require('servitude')
 bricks     = require('bricks')
