@@ -17,7 +17,7 @@ exports.config = config = ()->
   @configData = require(path.resolve(join('.', 'config.json')))
 
 exports.inProject = (dirname)->
-  return true if path.existsSync(join(dirname, 'config.json'))
+  return true if fs.existsSync(join(dirname, 'config.json'))
   false
 
 exports.clone = (dirname, template)->
