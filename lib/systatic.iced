@@ -1,6 +1,7 @@
 log        = console.log
 {join}     = require('path')
 path       = require('path')
+fs	       = require('fs')
 jade       = require(path.join(__dirname, 'plugins', 'jade_template'))
 servitude  = require('servitude')
 bricks     = require('bricks')
@@ -17,7 +18,7 @@ exports.config = config = ()->
   @configData = require(path.resolve(join('.', 'config.json')))
 
 exports.inProject = (dirname)->
-  return true if path.existsSync(join(dirname, 'config.json'))
+  return true if fs.existsSync(join(dirname, 'config.json'))
   false
 
 exports.clone = (dirname, template)->
